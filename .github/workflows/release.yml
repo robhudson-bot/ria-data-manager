@@ -1,0 +1,40 @@
+name: Create Release ZIP
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Create plugin ZIP
+        run: |
+          # Remove development files
+          rm -rf .git .github
+          
+          # Create ZIP excluding unnecessary files
+          cd ..
+          zip -r ria-data-manager.zip ria-data-manager \
+            -x "ria-data-manager/.git/*" \
+            -x "ria-data-manager/.github/*" \
+            -x "ria-data-manager/node_modules/*" \
+            -x "ria-data-manager/.gitignore" \
+            -x "ria-data-manager/config/config.php" \
+            -x "ria-data-manager/*.log"
+          
+          mv ria-data-manager.zip ria-data-manager/
+      
+      - name: Upload ZIP to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./ria-data-manager.zip
+          asset_name: ria-data-manager.zip
+          asset_content_type: application/zip

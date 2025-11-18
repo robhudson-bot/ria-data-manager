@@ -1,0 +1,5 @@
+# Ignore site-specific configuration
+config.php
+
+# Keep sample config
+!config.sample.php

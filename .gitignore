@@ -1,0 +1,92 @@
+# WordPress
+*.log
+.htaccess
+wp-config.php
+wp-content/advanced-cache.php
+wp-content/backup-db/
+wp-content/backups/
+wp-content/blogs.dir/
+wp-content/cache/
+wp-content/upgrade/
+wp-content/uploads/
+wp-content/mu-plugins/
+wp-content/wp-cache-config.php
+wp-content/plugins/hello.php
+
+# RIA Data Manager Specific
+config/config.php
+*.csv
+uploads/
+
+# Deployment System
+deploy/config.php
+
+# Logs
+*.log
+error_log
+debug.log
+
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*~
+
+# IDEs
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.code-workspace
+.phpintel/
+nbproject/
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# Composer
+/vendor/
+composer.lock
+composer.phar
+
+# Build files
+/dist/
+/build/
+*.zip
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+
+# Testing
+/tests/
+phpunit.xml
+.phpunit.result.cache
+
+# Development Documentation (commit-related files)
+COMMIT-*.md
+COMMIT_*.md
+*-SUMMARY.md
+READY-TO-COMMIT.md
+START-HERE.md
+VERIFICATION-*.md
+FIX-*.md
+test.txt
+QUICKSTART.md
