@@ -115,7 +115,7 @@ function ria_dm_quick_test_ajax() {
     }
     
     $post_type = isset($_GET['post_type']) ? sanitize_text_field($_GET['post_type']) : 'page';
-    $method = isset($_GET['method']) ? sanitize_text_field($_GET['method']) : 'rest';
+    $method = isset($_GET['method']) ? sanitize_text_field($_GET['method']) : 'improved';
     
     $args = array(
         'post_type' => $post_type,
@@ -123,8 +123,10 @@ function ria_dm_quick_test_ajax() {
         'include_acf' => true,
         'include_taxonomies' => true,
         'include_featured_image' => true,
+        'use_rest_api' => false, // Default to direct method (more reliable)
     );
-    
+
+    // Only use REST API if explicitly requested
     if ($method === 'rest') {
         $args['use_rest_api'] = true;
     }
@@ -184,12 +186,12 @@ function ria_dm_quick_test_js() {
     ?>
     <script>
     function riaQuickExport() {
-        if (!confirm('Export all Pages using REST API method?')) {
+        if (!confirm('Export all Pages using Improved method?')) {
             return;
         }
         
         var adminUrl = '<?php echo admin_url('admin-ajax.php'); ?>';
-        var exportUrl = adminUrl + '?action=ria_quick_test_export&post_type=page&method=rest';
+        var exportUrl = adminUrl + '?action=ria_quick_test_export&post_type=page&method=improved';
         
         // Show loading
         var loadingDiv = document.createElement('div');

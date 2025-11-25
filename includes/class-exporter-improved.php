@@ -130,14 +130,32 @@ class RIA_DM_Exporter_Improved {
             $response = wp_remote_get($request_url, array(
                 'timeout' => 30,
             ));
-            
+
             if (is_wp_error($response)) {
                 return $response;
             }
-            
+
             $body = wp_remote_retrieve_body($response);
+
+            // Check if response is HTML instead of JSON
+            if (preg_match('/^\s*</', $body)) {
+                $preview = substr(strip_tags($body), 0, 300);
+                return new WP_Error(
+                    'rest_api_html_response',
+                    sprintf('REST API returned HTML instead of JSON (likely a PHP error or plugin conflict). Response preview: %s', $preview)
+                );
+            }
+
             $posts = json_decode($body, true);
-            
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                $preview = substr($body, 0, 300);
+                return new WP_Error(
+                    'rest_api_json_error',
+                    sprintf('Failed to parse REST API response. Error: %s. Response: %s', json_last_error_msg(), $preview)
+                );
+            }
+
             if (empty($posts)) {
                 break;
             }

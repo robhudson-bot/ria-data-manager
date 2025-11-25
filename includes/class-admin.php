@@ -130,17 +130,12 @@ class RIA_DM_Admin {
         );
         
         // Auto-select best export method based on post type
-        // Pages use REST API for maximum reliability with complex HTML content
-        // Other post types use improved method for better performance
+        // Use improved direct method for all post types (more reliable than REST API)
+        // REST API option still available via manual selection if needed
         if ($export_method === 'auto') {
-            if ($post_type === 'page') {
-                $args['use_rest_api'] = true;
-                $result = RIA_DM_Exporter_Improved::export($args);
-                $method_label = 'REST API (recommended for Pages)';
-            } else {
-                $result = RIA_DM_Exporter_Improved::export($args);
-                $method_label = 'Improved';
-            }
+            // Always use improved direct method - REST API has compatibility issues
+            $result = RIA_DM_Exporter_Improved::export($args);
+            $method_label = 'Improved';
         } elseif ($export_method === 'rest') {
             // Force REST API method
             $args['use_rest_api'] = true;
