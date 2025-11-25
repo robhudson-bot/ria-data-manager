@@ -80,6 +80,11 @@ class RIA_Data_Manager {
         // Admin interface
         require_once RIA_DM_PLUGIN_DIR . 'includes/class-admin.php';
 
+        // Diagnostic tools (can be accessed via URL parameter)
+        if (is_admin() && isset($_GET['page']) && $_GET['page'] === 'ria-data-manager-diagnostic') {
+            require_once RIA_DM_PLUGIN_DIR . 'includes/diagnostic-acf-taxonomies.php';
+        }
+
         // Legacy exporters (deprecated - kept for reference only)
         // These are no longer loaded by default as they produce files too large for Google Sheets
         // require_once RIA_DM_PLUGIN_DIR . 'includes/class-exporter.php';
