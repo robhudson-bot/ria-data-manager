@@ -108,34 +108,56 @@ class RIA_DM_REST_Exporter {
      */
     private static function fetch_rest_data($url, $params = array()) {
         $request_url = add_query_arg($params, $url);
-        
+
         $response = wp_remote_get($request_url, array(
             'timeout' => 30,
             'headers' => array(
                 'X-WP-Nonce' => wp_create_nonce('wp_rest'),
             ),
         ));
-        
+
         if (is_wp_error($response)) {
             return $response;
         }
-        
+
         $status_code = wp_remote_retrieve_response_code($response);
         if ($status_code !== 200) {
-            return new WP_Error('rest_error', 'REST API request failed with status ' . $status_code);
+            $body = wp_remote_retrieve_body($response);
+            $preview = substr($body, 0, 200);
+            return new WP_Error(
+                'rest_error',
+                sprintf('REST API request failed with status %d. Response preview: %s', $status_code, $preview)
+            );
         }
-        
+
         $body = wp_remote_retrieve_body($response);
-        $data = json_decode($body, true);
-        
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            return new WP_Error('json_error', 'Failed to parse REST API response');
+
+        // Check if response looks like HTML instead of JSON
+        if (preg_match('/^\s*</', $body)) {
+            $preview = substr(strip_tags($body), 0, 200);
+            return new WP_Error(
+                'html_response',
+                sprintf('REST API returned HTML instead of JSON. This usually means a PHP error or plugin conflict. Response preview: %s', $preview)
+            );
         }
-        
+
+        $data = json_decode($body, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            $preview = substr($body, 0, 200);
+            return new WP_Error(
+                'json_error',
+                sprintf('Failed to parse REST API response as JSON. Error: %s. Response preview: %s',
+                    json_last_error_msg(),
+                    $preview
+                )
+            );
+        }
+
         // Get pagination info from headers
         $headers = wp_remote_retrieve_headers($response);
         $total_pages = isset($headers['X-WP-TotalPages']) ? intval($headers['X-WP-TotalPages']) : 1;
-        
+
         return array(
             'data' => $data,
             'total_pages' => $total_pages,
