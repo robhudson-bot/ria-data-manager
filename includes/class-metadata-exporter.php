@@ -117,14 +117,24 @@ class RIA_DM_Metadata_Exporter {
             'post_date',
             'post_modified',
             'post_author',
+            'last_modified_by',
             'post_parent',
+            'post_parent_title',
             'menu_order',
+            'page_template',
+            'comment_status',
+            'post_url',
+            'edit_url',
         ));
 
-        // Featured image
+        // Featured image with extra info
         if ($args['include_featured_image']) {
             $headers[] = 'featured_image';
+            $headers[] = 'has_featured_image';
         }
+
+        // Content statistics
+        $headers[] = 'word_count';
 
         // Taxonomies
         if ($args['include_taxonomies']) {
@@ -134,15 +144,55 @@ class RIA_DM_Metadata_Exporter {
             }
         }
 
-        // ACF fields
+        // ACF fields - improved detection
         if ($args['include_acf'] && RIA_DM_ACF_Handler::is_acf_active()) {
-            $acf_fields = RIA_DM_ACF_Handler::get_fields_for_post_type($args['post_type']);
-            foreach ($acf_fields as $field_name => $field_data) {
+            $acf_fields = self::get_all_acf_fields_for_export($args['post_type']);
+            foreach ($acf_fields as $field_name) {
                 $headers[] = 'acf_' . $field_name;
             }
         }
 
         return $headers;
+    }
+
+    /**
+     * Get all ACF fields that should be exported
+     * Uses multiple detection methods for reliability
+     *
+     * @param string $post_type Post type
+     * @return array Field names
+     */
+    private static function get_all_acf_fields_for_export($post_type) {
+        $field_names = array();
+
+        // Method 1: Try standard location-based detection
+        $fields_by_location = RIA_DM_ACF_Handler::get_fields_for_post_type($post_type);
+        foreach ($fields_by_location as $field_name => $field_data) {
+            $field_names[$field_name] = true;
+        }
+
+        // Method 2: Get fields from actual posts (more reliable)
+        $query = new WP_Query(array(
+            'post_type' => $post_type,
+            'posts_per_page' => 5, // Sample first 5 posts
+            'post_status' => 'any',
+            'fields' => 'ids',
+        ));
+
+        if ($query->have_posts()) {
+            foreach ($query->posts as $post_id) {
+                $post_fields = get_field_objects($post_id);
+                if ($post_fields) {
+                    foreach ($post_fields as $field_name => $field) {
+                        $field_names[$field_name] = true;
+                    }
+                }
+            }
+        }
+
+        wp_reset_postdata();
+
+        return array_keys($field_names);
     }
 
     /**
@@ -193,11 +243,17 @@ class RIA_DM_Metadata_Exporter {
                     break;
 
                 case 'post_date':
-                    $value = $post->post_date;
+                    // Format as YYYY-MM-DD for Google Sheets compatibility
+                    $value = !empty($post->post_date) && $post->post_date !== '0000-00-00 00:00:00'
+                        ? date('Y-m-d', strtotime($post->post_date))
+                        : '';
                     break;
 
                 case 'post_modified':
-                    $value = $post->post_modified;
+                    // Format as YYYY-MM-DD for Google Sheets compatibility
+                    $value = !empty($post->post_modified) && $post->post_modified !== '0000-00-00 00:00:00'
+                        ? date('Y-m-d', strtotime($post->post_modified))
+                        : '';
                     break;
 
                 case 'post_author':
@@ -205,12 +261,50 @@ class RIA_DM_Metadata_Exporter {
                     $value = $author ? $author->user_login : '';
                     break;
 
+                case 'last_modified_by':
+                    // Get last editor from revisions
+                    $last_revision = wp_get_post_revisions($post_id, array('posts_per_page' => 1));
+                    if ($last_revision) {
+                        $revision = reset($last_revision);
+                        $editor = get_userdata($revision->post_author);
+                        $value = $editor ? $editor->user_login : '';
+                    } else {
+                        // Fall back to post author
+                        $author = get_userdata($post->post_author);
+                        $value = $author ? $author->user_login : '';
+                    }
+                    break;
+
                 case 'post_parent':
                     $value = $post->post_parent;
                     break;
 
+                case 'post_parent_title':
+                    if ($post->post_parent) {
+                        $parent = get_post($post->post_parent);
+                        $value = $parent ? $parent->post_title : '';
+                    }
+                    break;
+
                 case 'menu_order':
                     $value = $post->menu_order;
+                    break;
+
+                case 'page_template':
+                    $template = get_page_template_slug($post_id);
+                    $value = $template ? $template : 'default';
+                    break;
+
+                case 'comment_status':
+                    $value = $post->comment_status;
+                    break;
+
+                case 'post_url':
+                    $value = get_permalink($post_id);
+                    break;
+
+                case 'edit_url':
+                    $value = get_edit_post_link($post_id);
                     break;
 
                 case 'featured_image':
@@ -220,6 +314,17 @@ class RIA_DM_Metadata_Exporter {
                             $value = wp_get_attachment_url($thumbnail_id);
                         }
                     }
+                    break;
+
+                case 'has_featured_image':
+                    if ($args['include_featured_image']) {
+                        $value = has_post_thumbnail($post_id) ? 'Yes' : 'No';
+                    }
+                    break;
+
+                case 'word_count':
+                    $content = strip_tags($post->post_content);
+                    $value = str_word_count($content);
                     break;
 
                 default:
