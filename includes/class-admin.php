@@ -97,27 +97,24 @@ class RIA_DM_Admin {
     }
     
     /**
-     * AJAX export handler - Updated to use improved exporter
+     * AJAX export handler - Uses metadata-only export for Google Sheets
+     *
+     * @since 1.2.0 - Simplified to only use metadata exporter
      */
     public function ajax_export() {
         check_ajax_referer('ria_dm_nonce', 'nonce');
-        
+
         if (!current_user_can('manage_options')) {
             wp_send_json_error(array('message' => 'Insufficient permissions'));
         }
-        
+
         // Get export parameters
         $post_type = isset($_POST['post_type']) ? sanitize_text_field($_POST['post_type']) : 'post';
         $post_status = isset($_POST['post_status']) ? array_map('sanitize_text_field', $_POST['post_status']) : array('publish');
         $include_acf = isset($_POST['include_acf']) && $_POST['include_acf'] === 'true';
         $include_taxonomies = isset($_POST['include_taxonomies']) && $_POST['include_taxonomies'] === 'true';
         $include_featured_image = isset($_POST['include_featured_image']) && $_POST['include_featured_image'] === 'true';
-        $date_from = isset($_POST['date_from']) ? sanitize_text_field($_POST['date_from']) : '';
-        $date_to = isset($_POST['date_to']) ? sanitize_text_field($_POST['date_to']) : '';
-        
-        // Get export method (defaults to 'auto' which selects best method for post type)
-        $export_method = isset($_POST['export_method']) ? sanitize_text_field($_POST['export_method']) : 'auto';
-        
+
         // Prepare export arguments
         $args = array(
             'post_type' => $post_type,
@@ -125,48 +122,31 @@ class RIA_DM_Admin {
             'include_acf' => $include_acf,
             'include_taxonomies' => $include_taxonomies,
             'include_featured_image' => $include_featured_image,
-            'date_from' => $date_from,
-            'date_to' => $date_to,
+            'include_content_preview' => true,  // Add 500-char preview
+            'preview_length' => 500,
         );
-        
-        // Auto-select best export method based on post type
-        // Use improved direct method for all post types (more reliable than REST API)
-        // REST API option still available via manual selection if needed
-        if ($export_method === 'auto') {
-            // Always use improved direct method - REST API has compatibility issues
-            $result = RIA_DM_Exporter_Improved::export($args);
-            $method_label = 'Improved';
-        } elseif ($export_method === 'rest') {
-            // Force REST API method
-            $args['use_rest_api'] = true;
-            $result = RIA_DM_Exporter_Improved::export($args);
-            $method_label = 'REST API';
-        } elseif ($export_method === 'original') {
-            // Use original exporter (for compatibility/fallback)
-            $result = RIA_DM_Exporter::export($args);
-            $method_label = 'Original';
-        } else {
-            // Default to improved method
-            $result = RIA_DM_Exporter_Improved::export($args);
-            $method_label = 'Improved';
-        }
-        
+
+        // Use metadata-only export (optimized for Google Sheets)
+        $result = RIA_DM_Metadata_Exporter::export($args);
+
         if (is_wp_error($result)) {
             wp_send_json_error(array(
                 'message' => $result->get_error_message(),
-                'method' => $method_label,
             ));
         }
-        
-        // Get download URL
+
+        // Get download URL and stats
         $download_url = RIA_DM_CSV_Processor::get_download_url($result);
-        
+        $stats = RIA_DM_Metadata_Exporter::get_export_stats($result);
+
         wp_send_json_success(array(
-            'message' => sprintf('Export completed successfully using %s method', $method_label),
+            'message' => 'Metadata export completed - ready for Google Sheets',
             'download_url' => $download_url,
             'filename' => basename($result),
-            'method' => $method_label,
-            'filesize' => size_format(filesize($result)),
+            'filesize' => $stats['filesize_formatted'],
+            'row_count' => $stats['row_count'],
+            'google_sheets_compatible' => $stats['google_sheets_compatible'],
+            'info' => 'This export excludes full post_content for Google Sheets compatibility. Content preview (500 chars) included for reference.',
         ));
     }
     

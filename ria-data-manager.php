@@ -2,7 +2,7 @@
 /**
  * Plugin Name: RIA Data Manager
  * Plugin URI: https://github.com/robhudson-bot/ria-data-manager
- * Description: Export and import WordPress content (posts, pages, custom post types) with ACF fields to/from CSV files. Built for the-ria.ca.
+ * Description: Export and import WordPress metadata (posts, pages, custom post types) with ACF fields for collaborative editing in Google Sheets. Optimized for team workflows.
  * Version: 1.2.0
  * Author: Rob Hudson
  * Author URI: https://the-ria.ca
@@ -65,26 +65,26 @@ class RIA_Data_Manager {
      * Load required files
      */
     private function load_dependencies() {
+        // Core utilities
         require_once RIA_DM_PLUGIN_DIR . 'includes/class-csv-processor.php';
         require_once RIA_DM_PLUGIN_DIR . 'includes/class-acf-handler.php';
         require_once RIA_DM_PLUGIN_DIR . 'includes/class-taxonomy-handler.php';
-        require_once RIA_DM_PLUGIN_DIR . 'includes/class-exporter.php';
-        require_once RIA_DM_PLUGIN_DIR . 'includes/class-rest-exporter.php';
-        require_once RIA_DM_PLUGIN_DIR . 'includes/class-exporter-improved.php';
+
+        // New metadata-focused exporters (v1.2.0+)
         require_once RIA_DM_PLUGIN_DIR . 'includes/class-metadata-exporter.php';
         require_once RIA_DM_PLUGIN_DIR . 'includes/class-google-sheets.php';
+
+        // Importer
         require_once RIA_DM_PLUGIN_DIR . 'includes/class-importer.php';
+
+        // Admin interface
         require_once RIA_DM_PLUGIN_DIR . 'includes/class-admin.php';
 
-        // Load test/debug tools in admin
-        if (is_admin() && defined('WP_DEBUG') && WP_DEBUG) {
-            require_once RIA_DM_PLUGIN_DIR . 'includes/test-export.php';
-        }
-        
-        // Load quick test export (always available for admins)
-        if (is_admin() || (defined('DOING_AJAX') && DOING_AJAX)) {
-            require_once RIA_DM_PLUGIN_DIR . 'includes/quick-test-export.php';
-        }
+        // Legacy exporters (deprecated - kept for reference only)
+        // These are no longer loaded by default as they produce files too large for Google Sheets
+        // require_once RIA_DM_PLUGIN_DIR . 'includes/class-exporter.php';
+        // require_once RIA_DM_PLUGIN_DIR . 'includes/class-rest-exporter.php';
+        // require_once RIA_DM_PLUGIN_DIR . 'includes/class-exporter-improved.php';
     }
     
     /**
