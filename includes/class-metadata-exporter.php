@@ -130,11 +130,34 @@ class RIA_DM_Metadata_Exporter {
         // Featured image with extra info
         if ($args['include_featured_image']) {
             $headers[] = 'featured_image';
+            $headers[] = 'featured_image_alt';
             $headers[] = 'has_featured_image';
         }
 
         // Content statistics
         $headers[] = 'word_count';
+
+        // Post-specific fields (only for 'post' type)
+        if ($args['post_type'] === 'post') {
+            $headers[] = 'is_sticky';
+            $headers[] = 'comment_count';
+            $headers[] = 'author_display_name';
+            $headers[] = 'author_email';
+        }
+
+        // Yoast SEO fields
+        if (self::is_yoast_active()) {
+            $headers[] = 'yoast_focus_keyword';
+            $headers[] = 'yoast_meta_description';
+            $headers[] = 'yoast_seo_score';
+            $headers[] = 'yoast_readability_score';
+            $headers[] = 'yoast_reading_time';
+            $headers[] = 'yoast_primary_category';
+            $headers[] = 'yoast_og_image';
+            $headers[] = 'yoast_og_description';
+            $headers[] = 'yoast_twitter_image';
+            $headers[] = 'yoast_twitter_title';
+        }
 
         // Taxonomies
         if ($args['include_taxonomies']) {
@@ -153,6 +176,15 @@ class RIA_DM_Metadata_Exporter {
         }
 
         return $headers;
+    }
+
+    /**
+     * Check if Yoast SEO is active
+     *
+     * @return bool
+     */
+    private static function is_yoast_active() {
+        return defined('WPSEO_VERSION') || class_exists('WPSEO_Options');
     }
 
     /**
@@ -316,6 +348,15 @@ class RIA_DM_Metadata_Exporter {
                     }
                     break;
 
+                case 'featured_image_alt':
+                    if ($args['include_featured_image']) {
+                        $thumbnail_id = get_post_thumbnail_id($post_id);
+                        if ($thumbnail_id) {
+                            $value = get_post_meta($thumbnail_id, '_wp_attachment_image_alt', true);
+                        }
+                    }
+                    break;
+
                 case 'has_featured_image':
                     if ($args['include_featured_image']) {
                         $value = has_post_thumbnail($post_id) ? 'Yes' : 'No';
@@ -325,6 +366,70 @@ class RIA_DM_Metadata_Exporter {
                 case 'word_count':
                     $content = strip_tags($post->post_content);
                     $value = str_word_count($content);
+                    break;
+
+                // Post-specific fields
+                case 'is_sticky':
+                    $value = is_sticky($post_id) ? 'Yes' : 'No';
+                    break;
+
+                case 'comment_count':
+                    $value = $post->comment_count;
+                    break;
+
+                case 'author_display_name':
+                    $author = get_userdata($post->post_author);
+                    $value = $author ? $author->display_name : '';
+                    break;
+
+                case 'author_email':
+                    $author = get_userdata($post->post_author);
+                    $value = $author ? $author->user_email : '';
+                    break;
+
+                // Yoast SEO fields
+                case 'yoast_focus_keyword':
+                    $value = get_post_meta($post_id, '_yoast_wpseo_focuskw', true);
+                    break;
+
+                case 'yoast_meta_description':
+                    $value = get_post_meta($post_id, '_yoast_wpseo_metadesc', true);
+                    break;
+
+                case 'yoast_seo_score':
+                    $value = get_post_meta($post_id, '_yoast_wpseo_linkdex', true);
+                    break;
+
+                case 'yoast_readability_score':
+                    $value = get_post_meta($post_id, '_yoast_wpseo_content_score', true);
+                    break;
+
+                case 'yoast_reading_time':
+                    $value = get_post_meta($post_id, '_yoast_wpseo_estimated-reading-time-minutes', true);
+                    break;
+
+                case 'yoast_primary_category':
+                    $cat_id = get_post_meta($post_id, '_yoast_wpseo_primary_category', true);
+                    if ($cat_id) {
+                        $category = get_category($cat_id);
+                        $value = $category ? $category->name : $cat_id;
+                    }
+                    break;
+
+                case 'yoast_og_image':
+                    $value = get_post_meta($post_id, '_yoast_wpseo_opengraph-image', true);
+                    break;
+
+                case 'yoast_og_description':
+                    $value = get_post_meta($post_id, '_yoast_wpseo_opengraph-description', true);
+                    break;
+
+                case 'yoast_twitter_image':
+                    $value = get_post_meta($post_id, '_yoast_wpseo_twitter-image', true);
+                    break;
+
+                case 'yoast_twitter_title':
+                    $value = get_post_meta($post_id, '_yoast_wpseo_twitter-title', true);
                     break;
 
                 default:
