@@ -7,7 +7,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-$post_types = RIA_DM_Exporter::get_available_post_types();
+// Get available post types using WordPress function
+$post_types = get_post_types(array('public' => true), 'objects');
 ?>
 
 <div class="ria-dm-export-container">
