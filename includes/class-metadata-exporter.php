@@ -179,7 +179,7 @@ class RIA_DM_Metadata_Exporter {
         if ($args['include_taxonomies']) {
             $taxonomies = get_object_taxonomies($args['post_type'], 'names');
             foreach ($taxonomies as $taxonomy) {
-                $headers[] = 'taxonomy_' . $taxonomy;
+                $headers[] = 'tax_' . $taxonomy;
             }
         }
 
@@ -450,8 +450,8 @@ class RIA_DM_Metadata_Exporter {
 
                 default:
                     // Taxonomy fields
-                    if (strpos($header, 'taxonomy_') === 0 && $args['include_taxonomies']) {
-                        $taxonomy = str_replace('taxonomy_', '', $header);
+                    if (strpos($header, 'tax_') === 0 && $args['include_taxonomies']) {
+                        $taxonomy = str_replace('tax_', '', $header);
                         $terms = wp_get_post_terms($post_id, $taxonomy, array('fields' => 'names'));
                         if (!is_wp_error($terms)) {
                             $value = implode(', ', $terms);
