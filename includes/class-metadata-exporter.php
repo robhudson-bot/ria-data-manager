@@ -37,6 +37,8 @@ class RIA_DM_Metadata_Exporter {
             'include_featured_image' => true,
             'include_content_preview' => true, // First 500 chars only
             'preview_length' => 500,
+            'date_from' => '',
+            'date_to' => '',
         );
 
         $args = wp_parse_args($args, $defaults);
@@ -49,6 +51,20 @@ class RIA_DM_Metadata_Exporter {
             'orderby' => 'ID',
             'order' => 'ASC',
         );
+
+        // Add date filtering if specified
+        if (!empty($args['date_from']) || !empty($args['date_to'])) {
+            $query_args['date_query'] = array();
+
+            if (!empty($args['date_from'])) {
+                $query_args['date_query']['after'] = $args['date_from'];
+            }
+
+            if (!empty($args['date_to'])) {
+                $query_args['date_query']['before'] = $args['date_to'];
+                $query_args['date_query']['inclusive'] = true;
+            }
+        }
 
         $query = new WP_Query($query_args);
 

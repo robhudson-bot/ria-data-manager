@@ -114,6 +114,8 @@ class RIA_DM_Admin {
         $include_acf = isset($_POST['include_acf']) && $_POST['include_acf'] === 'true';
         $include_taxonomies = isset($_POST['include_taxonomies']) && $_POST['include_taxonomies'] === 'true';
         $include_featured_image = isset($_POST['include_featured_image']) && $_POST['include_featured_image'] === 'true';
+        $date_from = isset($_POST['date_from']) ? sanitize_text_field($_POST['date_from']) : '';
+        $date_to = isset($_POST['date_to']) ? sanitize_text_field($_POST['date_to']) : '';
 
         // Prepare export arguments
         $args = array(
@@ -124,6 +126,8 @@ class RIA_DM_Admin {
             'include_featured_image' => $include_featured_image,
             'include_content_preview' => true,  // Add 500-char preview
             'preview_length' => 500,
+            'date_from' => $date_from,
+            'date_to' => $date_to,
         );
 
         // Use metadata-only export (optimized for Google Sheets)
