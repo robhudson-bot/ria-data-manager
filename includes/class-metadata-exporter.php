@@ -117,6 +117,7 @@ class RIA_DM_Metadata_Exporter {
         // Core WordPress fields (NO post_content!)
         $headers = array(
             'ID',
+            'post_type',
             'post_title',
             'post_excerpt',
         );
@@ -261,6 +262,10 @@ class RIA_DM_Metadata_Exporter {
             switch ($header) {
                 case 'ID':
                     $value = $post->ID;
+                    break;
+
+                case 'post_type':
+                    $value = $post->post_type;
                     break;
 
                 case 'post_title':

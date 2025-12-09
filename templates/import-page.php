@@ -6,6 +6,9 @@
 if (!defined('ABSPATH')) {
     exit;
 }
+
+// Get available post types
+$post_types = get_post_types(array('public' => true), 'objects');
 ?>
 
 <div class="ria-dm-import-container">
@@ -23,11 +26,30 @@ if (!defined('ABSPATH')) {
                     <td>
                         <input type="file" name="csv_file" id="csv_file" accept=".csv" required>
                         <p class="description">
-                            <?php _e('Select a CSV file to import. File must include post_title and post_type columns.', 'ria-data-manager'); ?>
+                            <?php _e('Select a CSV file to import.', 'ria-data-manager'); ?>
                         </p>
                     </td>
                 </tr>
-                
+
+                <tr>
+                    <th scope="row">
+                        <label for="default_post_type"><?php _e('Default Post Type', 'ria-data-manager'); ?></label>
+                    </th>
+                    <td>
+                        <select name="default_post_type" id="default_post_type" class="regular-text">
+                            <option value=""><?php _e('— Use post_type column from CSV —', 'ria-data-manager'); ?></option>
+                            <?php foreach ($post_types as $slug => $post_type) : ?>
+                                <option value="<?php echo esc_attr($slug); ?>">
+                                    <?php echo esc_html($post_type->label); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <p class="description">
+                            <?php _e('Select a post type to apply to all rows, or leave blank to use the post_type column from CSV.', 'ria-data-manager'); ?>
+                        </p>
+                    </td>
+                </tr>
+
                 <tr>
                     <th scope="row">
                         <label><?php _e('Import Options', 'ria-data-manager'); ?></label>
@@ -198,6 +220,7 @@ jQuery(document).ready(function($) {
         formData.append('update_existing', $('input[name="update_existing"]').is(':checked'));
         formData.append('create_taxonomies', $('input[name="create_taxonomies"]').is(':checked'));
         formData.append('skip_on_error', $('input[name="skip_on_error"]').is(':checked'));
+        formData.append('default_post_type', $('#default_post_type').val());
         
         // Show progress
         $('#ria-dm-import-progress').show();

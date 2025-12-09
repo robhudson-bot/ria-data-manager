@@ -26,6 +26,7 @@ class RIA_DM_Importer {
             'field_mapping' => array(), // Custom field mapping
             'default_post_status' => 'draft',
             'default_post_author' => get_current_user_id(),
+            'default_post_type' => '', // Override post_type for all rows
         );
         
         $args = wp_parse_args($args, $defaults);
@@ -193,11 +194,15 @@ class RIA_DM_Importer {
             ? $row['post_status'] 
             : $args['default_post_status'];
         
-        // Post type
-        $post_data['post_type'] = !empty($row['post_type']) 
-            ? $row['post_type'] 
-            : 'post';
-        
+        // Post type - use default_post_type if set, then CSV column, then fallback to 'post'
+        if (!empty($args['default_post_type'])) {
+            $post_data['post_type'] = $args['default_post_type'];
+        } elseif (!empty($row['post_type'])) {
+            $post_data['post_type'] = $row['post_type'];
+        } else {
+            return new WP_Error('missing_post_type', 'Post type is required. Either include a post_type column in your CSV or select a Default Post Type.');
+        }
+
         // Validate post type exists
         if (!post_type_exists($post_data['post_type'])) {
             return new WP_Error('invalid_post_type', 'Post type does not exist: ' . $post_data['post_type']);

@@ -194,12 +194,14 @@ class RIA_DM_Admin {
         $update_existing = isset($_POST['update_existing']) && $_POST['update_existing'] === 'true';
         $create_taxonomies = isset($_POST['create_taxonomies']) && $_POST['create_taxonomies'] === 'true';
         $skip_on_error = isset($_POST['skip_on_error']) && $_POST['skip_on_error'] === 'true';
-        
+        $default_post_type = isset($_POST['default_post_type']) ? sanitize_text_field($_POST['default_post_type']) : '';
+
         // Prepare import arguments
         $args = array(
             'update_existing' => $update_existing,
             'create_taxonomies' => $create_taxonomies,
             'skip_on_error' => $skip_on_error,
+            'default_post_type' => $default_post_type,
         );
         
         // Perform import
