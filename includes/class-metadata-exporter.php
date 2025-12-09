@@ -457,12 +457,18 @@ class RIA_DM_Metadata_Exporter {
                             $value = implode(', ', $terms);
                         }
                     }
-                    // ACF fields
+                    // ACF fields - use ACF Handler for proper type-aware formatting
                     elseif (strpos($header, 'acf_') === 0 && $args['include_acf']) {
                         $field_name = str_replace('acf_', '', $header);
-                        if (function_exists('get_field')) {
-                            $field_value = get_field($field_name, $post_id);
-                            $value = self::format_acf_value($field_value);
+                        if (function_exists('get_field_object')) {
+                            $field_object = get_field_object($field_name, $post_id);
+                            if ($field_object && isset($field_object['value'])) {
+                                // Use ACF Handler's type-aware formatting
+                                $value = RIA_DM_ACF_Handler::format_field_for_export(
+                                    $field_object['value'],
+                                    $field_object['type']
+                                );
+                            }
                         }
                     }
                     break;
@@ -475,51 +481,6 @@ class RIA_DM_Metadata_Exporter {
         return $row;
     }
 
-    /**
-     * Format ACF value for CSV export
-     *
-     * @param mixed $value ACF field value
-     * @return string Formatted value
-     */
-    private static function format_acf_value($value) {
-        if (is_array($value)) {
-            // Simple arrays: join with pipe
-            if (self::is_simple_array($value)) {
-                return implode(' | ', $value);
-            }
-            // Complex arrays: JSON
-            return json_encode($value);
-        } elseif (is_object($value)) {
-            // Post objects: use ID
-            if (isset($value->ID)) {
-                return $value->ID;
-            }
-            // Other objects: JSON
-            return json_encode($value);
-        }
-
-        return (string) $value;
-    }
-
-    /**
-     * Check if array contains only simple values
-     *
-     * @param array $array Array to check
-     * @return bool True if simple
-     */
-    private static function is_simple_array($array) {
-        if (!is_array($array)) {
-            return false;
-        }
-
-        foreach ($array as $value) {
-            if (is_array($value) || is_object($value)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
 
     /**
      * Sanitize value for CSV

@@ -98,9 +98,9 @@ class RIA_DM_ACF_Handler {
             }
             
             $value = $field['value'];
-            
+
             // Format value based on field type
-            $formatted_value = self::format_field_value($value, $field['type']);
+            $formatted_value = self::format_field_for_export($value, $field['type']);
             
             $exported_fields['acf_' . $field_name] = $formatted_value;
         }
@@ -115,7 +115,7 @@ class RIA_DM_ACF_Handler {
      * @param string $type Field type
      * @return string Formatted value
      */
-    private static function format_field_value($value, $type) {
+    public static function format_field_for_export($value, $type) {
         switch ($type) {
             case 'repeater':
                 // Repeater fields: JSON encode
