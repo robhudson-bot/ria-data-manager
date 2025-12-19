@@ -224,11 +224,21 @@
     white-space: nowrap;
 }
 
+.ria-dm-preview table {
+    table-layout: auto !important;
+    width: auto;
+    min-width: 100%;
+}
+
+.ria-dm-preview table th,
 .ria-dm-preview table td {
-    max-width: 300px;
+    min-width: 80px;
+    max-width: 200px;
+    padding: 8px 10px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    font-size: 12px;
 }
 
 /* Responsive */
@@ -261,6 +271,219 @@
         display: block;
         padding-top: 5px;
     }
+}
+
+/* ==========================================================================
+   Import Preview - Before/After Comparison
+   ========================================================================== */
+
+.ria-dm-preview-summary {
+    background: #f0f6fc;
+    border: 1px solid #c3d4e5;
+    border-radius: 6px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.ria-dm-preview-summary h4 {
+    margin: 0 0 15px 0;
+    color: #1d2327;
+}
+
+.ria-dm-summary-stats {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.ria-dm-stat {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 12px 20px;
+    text-align: center;
+    min-width: 100px;
+}
+
+.ria-dm-stat-num {
+    display: block;
+    font-size: 24px;
+    font-weight: 700;
+    color: #1d2327;
+}
+
+.ria-dm-stat-label {
+    display: block;
+    font-size: 12px;
+    color: #666;
+    margin-top: 4px;
+}
+
+.ria-dm-stat-update {
+    border-color: #2271b1;
+}
+
+.ria-dm-stat-update .ria-dm-stat-num {
+    color: #2271b1;
+}
+
+.ria-dm-stat-create {
+    border-color: #00a32a;
+}
+
+.ria-dm-stat-create .ria-dm-stat-num {
+    color: #00a32a;
+}
+
+.ria-dm-stat-tax {
+    border-color: #9b59b6;
+}
+
+.ria-dm-stat-tax .ria-dm-stat-num {
+    color: #9b59b6;
+}
+
+.ria-dm-warnings {
+    margin-bottom: 20px;
+}
+
+.ria-dm-warning {
+    background: #fcf0f1;
+    border-left: 4px solid #d63638;
+    padding: 10px 15px;
+    margin: 0 0 10px 0;
+}
+
+.ria-dm-changes-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.ria-dm-change-item {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.ria-dm-change-item.ria-dm-change-update {
+    border-left: 4px solid #2271b1;
+}
+
+.ria-dm-change-item.ria-dm-change-create {
+    border-left: 4px solid #00a32a;
+}
+
+.ria-dm-change-header {
+    background: #f6f7f7;
+    padding: 12px 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.ria-dm-change-type {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 3px;
+    margin-right: 10px;
+}
+
+.ria-dm-change-update .ria-dm-change-type {
+    background: #2271b1;
+    color: #fff;
+}
+
+.ria-dm-change-create .ria-dm-change-type {
+    background: #00a32a;
+    color: #fff;
+}
+
+.ria-dm-change-id {
+    color: #888;
+    font-size: 12px;
+}
+
+.ria-dm-edit-link {
+    font-size: 12px;
+    margin-left: 10px;
+}
+
+.ria-dm-change-fields {
+    padding: 15px;
+}
+
+.ria-dm-field-change {
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.ria-dm-field-change:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.ria-dm-field-name {
+    display: block;
+    font-weight: 600;
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 6px;
+}
+
+.ria-dm-field-values {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.ria-dm-old-value {
+    background: #fcf0f1;
+    color: #8a2424;
+    padding: 6px 12px;
+    border-radius: 3px;
+    font-size: 13px;
+    text-decoration: line-through;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ria-dm-arrow {
+    color: #666;
+    font-weight: bold;
+}
+
+.ria-dm-new-value {
+    background: #edfaef;
+    color: #1a5d1a;
+    padding: 6px 12px;
+    border-radius: 3px;
+    font-size: 13px;
+    font-weight: 500;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ria-dm-more-changes {
+    text-align: center;
+    color: #666;
+    font-style: italic;
+    margin-top: 15px;
+}
+
+.ria-dm-no-changes {
+    text-align: center;
+    color: #666;
+    padding: 30px;
+    background: #f6f7f7;
+    border-radius: 4px;
 }
 
 /* Utility Classes */

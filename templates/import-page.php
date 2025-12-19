@@ -136,21 +136,24 @@ $post_types = get_post_types(array('public' => true), 'objects');
 
 <script>
 jQuery(document).ready(function($) {
-    // Preview Import
+    // Preview Import - Shows before/after comparison
     $('#ria-dm-preview-btn').on('click', function(e) {
         e.preventDefault();
-        
+
         var fileInput = $('#csv_file')[0];
         if (!fileInput.files.length) {
             alert('<?php _e('Please select a CSV file first', 'ria-data-manager'); ?>');
             return;
         }
-        
+
+        var $btn = $(this);
+        $btn.prop('disabled', true).text('Analyzing...');
+
         var formData = new FormData();
         formData.append('action', 'ria_dm_preview_import');
         formData.append('nonce', riaDM.nonce);
         formData.append('csv_file', fileInput.files[0]);
-        
+
         $.ajax({
             url: riaDM.ajaxurl,
             type: 'POST',
@@ -159,42 +162,82 @@ jQuery(document).ready(function($) {
             contentType: false,
             success: function(response) {
                 if (response.success) {
-                    var html = '<p><strong><?php _e('Total Rows:', 'ria-data-manager'); ?></strong> ' + response.data.total_rows + '</p>';
-                    html += '<p><strong><?php _e('Detected Columns:', 'ria-data-manager'); ?></strong></p>';
-                    html += '<ul>';
-                    response.data.headers.forEach(function(header) {
-                        html += '<li>' + header + '</li>';
-                    });
-                    html += '</ul>';
-                    
-                    html += '<h4><?php _e('Preview (First 5 Rows):', 'ria-data-manager'); ?></h4>';
-                    html += '<div class="ria-dm-preview-table-wrapper">';
-                    html += '<table class="wp-list-table widefat fixed striped">';
-                    html += '<thead><tr>';
-                    response.data.headers.forEach(function(header) {
-                        html += '<th>' + header + '</th>';
-                    });
-                    html += '</tr></thead><tbody>';
-                    
-                    response.data.preview_data.forEach(function(row) {
-                        html += '<tr>';
-                        response.data.headers.forEach(function(header) {
-                            var value = row[header] || '';
-                            if (value.length > 100) {
-                                value = value.substring(0, 100) + '...';
-                            }
-                            html += '<td>' + $('<div>').text(value).html() + '</td>';
+                    var data = response.data;
+                    var html = '';
+
+                    // Summary Box
+                    html += '<div class="ria-dm-preview-summary">';
+                    html += '<h4>Import Summary</h4>';
+                    html += '<div class="ria-dm-summary-stats">';
+                    html += '<div class="ria-dm-stat"><span class="ria-dm-stat-num">' + data.summary.total + '</span><span class="ria-dm-stat-label">Total Rows</span></div>';
+                    html += '<div class="ria-dm-stat ria-dm-stat-update"><span class="ria-dm-stat-num">' + data.summary.updates + '</span><span class="ria-dm-stat-label">Updates</span></div>';
+                    html += '<div class="ria-dm-stat ria-dm-stat-create"><span class="ria-dm-stat-num">' + data.summary.creates + '</span><span class="ria-dm-stat-label">New Posts</span></div>';
+                    html += '<div class="ria-dm-stat"><span class="ria-dm-stat-num">' + data.summary.unchanged + '</span><span class="ria-dm-stat-label">Unchanged</span></div>';
+                    if (data.summary.taxonomy_changes > 0) {
+                        html += '<div class="ria-dm-stat ria-dm-stat-tax"><span class="ria-dm-stat-num">' + data.summary.taxonomy_changes + '</span><span class="ria-dm-stat-label">Taxonomy Changes</span></div>';
+                    }
+                    html += '</div></div>';
+
+                    // Warnings
+                    if (data.warnings && data.warnings.length > 0) {
+                        html += '<div class="ria-dm-warnings">';
+                        data.warnings.forEach(function(warning) {
+                            html += '<p class="ria-dm-warning">⚠️ ' + $('<div>').text(warning).html() + '</p>';
                         });
-                        html += '</tr>';
-                    });
-                    
-                    html += '</tbody></table></div>';
-                    
+                        html += '</div>';
+                    }
+
+                    // Detailed Changes
+                    if (data.changes && data.changes.length > 0) {
+                        html += '<h4>Pending Changes (First ' + data.changes.length + ')</h4>';
+                        html += '<div class="ria-dm-changes-list">';
+
+                        data.changes.forEach(function(item) {
+                            var typeClass = item.type === 'create' ? 'ria-dm-change-create' : 'ria-dm-change-update';
+                            var typeLabel = item.type === 'create' ? 'NEW' : 'UPDATE';
+
+                            html += '<div class="ria-dm-change-item ' + typeClass + '">';
+                            html += '<div class="ria-dm-change-header">';
+                            html += '<span class="ria-dm-change-type">' + typeLabel + '</span>';
+                            html += '<strong>' + $('<div>').text(item.title).html() + '</strong>';
+                            if (item.id) {
+                                html += ' <span class="ria-dm-change-id">(ID: ' + item.id + ')</span>';
+                            }
+                            if (item.edit_url) {
+                                html += ' <a href="' + item.edit_url + '" target="_blank" class="ria-dm-edit-link">Edit</a>';
+                            }
+                            html += '</div>';
+
+                            html += '<div class="ria-dm-change-fields">';
+                            item.changes.forEach(function(change) {
+                                html += '<div class="ria-dm-field-change">';
+                                html += '<span class="ria-dm-field-name">' + $('<div>').text(change.field_label || change.field).html() + '</span>';
+                                html += '<div class="ria-dm-field-values">';
+                                html += '<span class="ria-dm-old-value">' + $('<div>').text(change.old).html() + '</span>';
+                                html += '<span class="ria-dm-arrow">→</span>';
+                                html += '<span class="ria-dm-new-value">' + $('<div>').text(change.new).html() + '</span>';
+                                html += '</div></div>';
+                            });
+                            html += '</div></div>';
+                        });
+
+                        html += '</div>';
+
+                        if (data.summary.updates > data.changes.length) {
+                            html += '<p class="ria-dm-more-changes">... and ' + (data.summary.updates - data.changes.length) + ' more updates</p>';
+                        }
+                    } else if (data.summary.updates === 0 && data.summary.creates === 0) {
+                        html += '<p class="ria-dm-no-changes">No changes detected. All rows match existing data.</p>';
+                    }
+
                     $('#ria-dm-preview-content').html(html);
                     $('#ria-dm-preview-section').show();
                 } else {
                     alert('<?php _e('Error:', 'ria-data-manager'); ?> ' + response.data.message);
                 }
+            },
+            complete: function() {
+                $btn.prop('disabled', false).html('<span class="dashicons dashicons-visibility"></span> Preview Import');
             }
         });
     });

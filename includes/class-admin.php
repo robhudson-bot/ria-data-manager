@@ -221,40 +221,176 @@ class RIA_DM_Admin {
     }
     
     /**
-     * AJAX preview import handler
+     * AJAX preview import handler - Shows before/after comparison
      */
     public function ajax_preview_import() {
         check_ajax_referer('ria_dm_nonce', 'nonce');
-        
+
         if (!current_user_can('manage_options')) {
             wp_send_json_error(array('message' => 'Insufficient permissions'));
         }
-        
+
         // Check if file was uploaded
         if (empty($_FILES['csv_file'])) {
             wp_send_json_error(array('message' => 'No file uploaded'));
         }
-        
+
         $file = $_FILES['csv_file'];
-        
+
         // Read CSV
         $csv_data = RIA_DM_CSV_Processor::read_csv($file['tmp_name']);
-        
+
         if (is_wp_error($csv_data)) {
             wp_send_json_error(array('message' => $csv_data->get_error_message()));
         }
-        
-        // Get field mapping suggestions
-        $suggested_mapping = RIA_DM_CSV_Processor::suggest_field_mapping($csv_data['headers']);
-        
-        // Get first 5 rows for preview
-        $preview_data = array_slice($csv_data['data'], 0, 5);
-        
+
+        // Analyze changes by comparing CSV data to current WordPress data
+        $changes = $this->analyze_import_changes($csv_data['data'], $csv_data['headers']);
+
         wp_send_json_success(array(
-            'headers' => $csv_data['headers'],
-            'suggested_mapping' => $suggested_mapping,
-            'preview_data' => $preview_data,
             'total_rows' => $csv_data['total_rows'],
+            'summary' => $changes['summary'],
+            'changes' => $changes['details'],
+            'warnings' => $changes['warnings'],
         ));
+    }
+
+    /**
+     * Analyze import changes - compare CSV data to current WordPress data
+     *
+     * @param array $csv_rows CSV data rows
+     * @param array $headers CSV headers
+     * @return array Analysis results with summary and detailed changes
+     */
+    private function analyze_import_changes($csv_rows, $headers) {
+        $summary = array(
+            'total' => count($csv_rows),
+            'updates' => 0,
+            'creates' => 0,
+            'unchanged' => 0,
+            'taxonomy_changes' => 0,
+        );
+
+        $details = array();
+        $warnings = array();
+        $max_preview = 10; // Show details for first 10 rows
+
+        foreach ($csv_rows as $index => $row) {
+            $post_id = isset($row['ID']) ? intval($row['ID']) : 0;
+            $post_title = isset($row['post_title']) ? $row['post_title'] : 'Untitled';
+
+            // Check if post exists
+            $existing_post = $post_id ? get_post($post_id) : null;
+
+            if (!$existing_post) {
+                $summary['creates']++;
+                if ($index < $max_preview) {
+                    $details[] = array(
+                        'type' => 'create',
+                        'title' => $post_title,
+                        'id' => null,
+                        'changes' => array(
+                            array(
+                                'field' => 'New Post',
+                                'old' => '-',
+                                'new' => $post_title,
+                            )
+                        ),
+                    );
+                }
+                continue;
+            }
+
+            // Compare existing post to CSV data
+            $field_changes = array();
+
+            // Check taxonomy fields specifically
+            foreach ($row as $field => $new_value) {
+                if (strpos($field, 'tax_') === 0 && !empty($new_value)) {
+                    $taxonomy = substr($field, 4);
+
+                    if (taxonomy_exists($taxonomy)) {
+                        // Get current terms
+                        $current_terms = wp_get_post_terms($post_id, $taxonomy, array('fields' => 'names'));
+                        $current_value = is_array($current_terms) ? implode(', ', $current_terms) : '';
+
+                        // Normalize new value (handle line breaks, extra spaces)
+                        $new_terms = array_map('trim', explode(',', $new_value));
+                        $new_terms = array_filter($new_terms);
+                        $normalized_new = implode(', ', $new_terms);
+
+                        // Compare
+                        if ($current_value !== $normalized_new) {
+                            $field_changes[] = array(
+                                'field' => $field,
+                                'field_label' => 'Taxonomy: ' . $taxonomy,
+                                'old' => $current_value ?: '(empty)',
+                                'new' => $normalized_new,
+                            );
+                            $summary['taxonomy_changes']++;
+                        }
+                    }
+                }
+            }
+
+            // Check other key fields
+            $check_fields = array(
+                'post_title' => 'Title',
+                'post_status' => 'Status',
+                'post_excerpt' => 'Excerpt',
+            );
+
+            foreach ($check_fields as $field => $label) {
+                if (isset($row[$field])) {
+                    $current_value = $existing_post->$field ?? '';
+                    $new_value = $row[$field];
+
+                    if ($current_value !== $new_value && !empty($new_value)) {
+                        $field_changes[] = array(
+                            'field' => $field,
+                            'field_label' => $label,
+                            'old' => $this->truncate_value($current_value, 50),
+                            'new' => $this->truncate_value($new_value, 50),
+                        );
+                    }
+                }
+            }
+
+            if (!empty($field_changes)) {
+                $summary['updates']++;
+                if ($index < $max_preview) {
+                    $details[] = array(
+                        'type' => 'update',
+                        'title' => $existing_post->post_title,
+                        'id' => $post_id,
+                        'edit_url' => get_edit_post_link($post_id, 'raw'),
+                        'changes' => $field_changes,
+                    );
+                }
+            } else {
+                $summary['unchanged']++;
+            }
+        }
+
+        // Add warning if many rows will be affected
+        if ($summary['updates'] > 50) {
+            $warnings[] = 'Large import: ' . $summary['updates'] . ' posts will be updated. Consider testing with a smaller batch first.';
+        }
+
+        return array(
+            'summary' => $summary,
+            'details' => $details,
+            'warnings' => $warnings,
+        );
+    }
+
+    /**
+     * Truncate value for display
+     */
+    private function truncate_value($value, $length = 50) {
+        if (strlen($value) > $length) {
+            return substr($value, 0, $length) . '...';
+        }
+        return $value ?: '(empty)';
     }
 }
