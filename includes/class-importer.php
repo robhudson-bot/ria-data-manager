@@ -9,7 +9,36 @@ if (!defined('ABSPATH')) {
 }
 
 class RIA_DM_Importer {
-    
+
+    /**
+     * Log file path
+     */
+    private static $log_file = null;
+
+    /**
+     * Get log file path
+     */
+    private static function get_log_file() {
+        if (self::$log_file === null) {
+            $upload_dir = wp_upload_dir();
+            $log_dir = $upload_dir['basedir'] . '/ria-data-manager/logs/';
+            if (!file_exists($log_dir)) {
+                wp_mkdir_p($log_dir);
+            }
+            self::$log_file = $log_dir . 'import_' . date('Y-m-d_His') . '.log';
+        }
+        return self::$log_file;
+    }
+
+    /**
+     * Write to import log
+     */
+    private static function log($message) {
+        $log_file = self::get_log_file();
+        $timestamp = date('Y-m-d H:i:s');
+        file_put_contents($log_file, "[$timestamp] $message\n", FILE_APPEND);
+    }
+
     /**
      * Import posts from CSV
      *
@@ -18,6 +47,12 @@ class RIA_DM_Importer {
      * @return array|WP_Error Import results or error
      */
     public static function import($file_path, $args = array()) {
+        // Reset log file for new import
+        self::$log_file = null;
+
+        self::log('=== IMPORT STARTED ===');
+        self::log('File: ' . basename($file_path));
+
         $defaults = array(
             'update_existing' => true,
             'create_taxonomies' => true,
@@ -28,27 +63,34 @@ class RIA_DM_Importer {
             'default_post_author' => get_current_user_id(),
             'default_post_type' => '', // Override post_type for all rows
         );
-        
+
         $args = wp_parse_args($args, $defaults);
-        
+        self::log('Options: update_existing=' . ($args['update_existing'] ? 'yes' : 'no') .
+                  ', create_taxonomies=' . ($args['create_taxonomies'] ? 'yes' : 'no') .
+                  ', default_post_type=' . ($args['default_post_type'] ?: 'from CSV'));
+
         // Read CSV file
         $csv_data = RIA_DM_CSV_Processor::read_csv($file_path);
-        
+
         if (is_wp_error($csv_data)) {
+            self::log('ERROR: Failed to read CSV - ' . $csv_data->get_error_message());
             return $csv_data;
         }
-        
+
+        self::log('CSV loaded: ' . count($csv_data['data']) . ' rows, ' . count($csv_data['headers']) . ' columns');
+
         // Validate CSV structure
         $validation = RIA_DM_CSV_Processor::validate_csv_structure($csv_data['headers']);
         if (is_wp_error($validation)) {
+            self::log('ERROR: CSV validation failed - ' . $validation->get_error_message());
             return $validation;
         }
-        
+
         // Apply field mapping
         if (!empty($args['field_mapping'])) {
             $csv_data['data'] = self::apply_field_mapping($csv_data['data'], $args['field_mapping']);
         }
-        
+
         // Process imports
         $results = array(
             'success' => 0,
@@ -56,32 +98,62 @@ class RIA_DM_Importer {
             'created' => 0,
             'failed' => 0,
             'errors' => array(),
+            'log_file' => basename(self::get_log_file()),
         );
-        
+
+        self::log('--- Processing rows ---');
+
         foreach ($csv_data['data'] as $index => $row) {
-            $result = self::import_row($row, $args);
-            
-            if (is_wp_error($result)) {
-                $results['failed']++;
-                $results['errors'][] = array(
-                    'row' => $index + 2, // +2 for header row and 0-index
-                    'message' => $result->get_error_message(),
-                );
-                
-                if (!$args['skip_on_error']) {
-                    break;
-                }
-            } else {
-                $results['success']++;
-                
-                if ($result['action'] === 'updated') {
-                    $results['updated']++;
+            $row_num = $index + 2; // +2 for header row and 0-index
+            $post_id = isset($row['ID']) ? $row['ID'] : 'new';
+            $post_title = isset($row['post_title']) ? substr($row['post_title'], 0, 50) : 'untitled';
+
+            try {
+                $result = self::import_row($row, $args);
+
+                if (is_wp_error($result)) {
+                    $results['failed']++;
+                    $error_msg = $result->get_error_message();
+                    $results['errors'][] = array(
+                        'row' => $row_num,
+                        'post_id' => $post_id,
+                        'title' => $post_title,
+                        'message' => $error_msg,
+                    );
+                    self::log("Row $row_num FAILED (ID:$post_id \"$post_title\"): $error_msg");
+
+                    if (!$args['skip_on_error']) {
+                        self::log('Stopping import due to error (skip_on_error=false)');
+                        break;
+                    }
                 } else {
-                    $results['created']++;
+                    $results['success']++;
+
+                    if ($result['action'] === 'updated') {
+                        $results['updated']++;
+                        self::log("Row $row_num UPDATED post ID {$result['post_id']} \"$post_title\"");
+                    } else {
+                        $results['created']++;
+                        self::log("Row $row_num CREATED post ID {$result['post_id']} \"$post_title\"");
+                    }
                 }
+            } catch (Exception $e) {
+                $results['failed']++;
+                $error_msg = 'Exception: ' . $e->getMessage();
+                $results['errors'][] = array(
+                    'row' => $row_num,
+                    'post_id' => $post_id,
+                    'title' => $post_title,
+                    'message' => $error_msg,
+                );
+                self::log("Row $row_num EXCEPTION (ID:$post_id): $error_msg");
             }
         }
-        
+
+        self::log('--- Import complete ---');
+        self::log("Results: {$results['success']} success ({$results['updated']} updated, {$results['created']} created), {$results['failed']} failed");
+        self::log('=== IMPORT FINISHED ===');
+
         return $results;
     }
     
