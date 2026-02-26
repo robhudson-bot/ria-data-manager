@@ -1,14 +1,14 @@
 <?php
 /**
- * Plugin Name: RIA Data Manager
- * Plugin URI: https://github.com/robhudson-bot/ria-data-manager
- * Description: Export and import WordPress metadata (posts, pages, custom post types) with ACF fields for collaborative editing in Google Sheets. Optimized for team workflows.
- * Version: 1.2.1
+ * Plugin Name: Quarry
+ * Plugin URI: https://github.com/robhudson-bot/quarry
+ * Description: WordPress site scanner and data manager. Discover your site structure, export/import metadata with ACF fields, and collaborate via Google Sheets.
+ * Version: 2.0.0
  * Author: Rob Hudson
- * Author URI: https://the-ria.ca
+ * Author URI: https://robhudson.ca
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: ria-data-manager
+ * Text Domain: quarry
  * Requires at least: 5.8
  * Requires PHP: 7.4
  */
@@ -19,31 +19,36 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('RIA_DM_VERSION', '1.2.1');
-define('RIA_DM_PLUGIN_DIR', plugin_dir_path(__FILE__));
-define('RIA_DM_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('RIA_DM_PLUGIN_BASENAME', plugin_basename(__FILE__));
-define('RIA_DM_MIN_WP_VERSION', '5.8');
+define('QRY_VERSION', '2.0.0');
+define('QRY_PLUGIN_DIR', plugin_dir_path(__FILE__));
+define('QRY_PLUGIN_URL', plugin_dir_url(__FILE__));
+define('QRY_PLUGIN_BASENAME', plugin_basename(__FILE__));
+define('QRY_MIN_WP_VERSION', '5.8');
 
 // GitHub token for checking plugin updates.
-// Read-only fine-grained PAT scoped to robhudson-bot/ria-data-manager.
-if (!defined('RIA_DM_UPDATE_TOKEN')) {
-    define('RIA_DM_UPDATE_TOKEN', '');
+// Read-only fine-grained PAT scoped to robhudson-bot/quarry.
+// Supports both QUARRY_UPDATE_TOKEN (new) and RIA_DM_UPDATE_TOKEN (legacy).
+if ( ! defined( 'QUARRY_UPDATE_TOKEN' ) ) {
+    if ( defined( 'RIA_DM_UPDATE_TOKEN' ) && RIA_DM_UPDATE_TOKEN ) {
+        define( 'QUARRY_UPDATE_TOKEN', RIA_DM_UPDATE_TOKEN );
+    } else {
+        define( 'QUARRY_UPDATE_TOKEN', '' );
+    }
 }
 
 // Load optional site-specific configuration
-$ria_dm_config_file = RIA_DM_PLUGIN_DIR . 'config/config.php';
-if (file_exists($ria_dm_config_file)) {
-    $ria_dm_config = include $ria_dm_config_file;
-    define('RIA_DM_CONFIG', $ria_dm_config);
+$qry_config_file = QRY_PLUGIN_DIR . 'config/config.php';
+if (file_exists($qry_config_file)) {
+    $qry_config = include $qry_config_file;
+    define('QRY_CONFIG', $qry_config);
 } else {
-    define('RIA_DM_CONFIG', array());
+    define('QRY_CONFIG', array());
 }
 
 /**
- * Main RIA Data Manager Class
+ * Main Quarry Plugin Class
  */
-class RIA_Data_Manager {
+class Quarry {
     
     /**
      * Single instance of the class
@@ -73,33 +78,36 @@ class RIA_Data_Manager {
      */
     private function load_dependencies() {
         // Core utilities
-        require_once RIA_DM_PLUGIN_DIR . 'includes/class-csv-processor.php';
-        require_once RIA_DM_PLUGIN_DIR . 'includes/class-acf-handler.php';
-        require_once RIA_DM_PLUGIN_DIR . 'includes/class-taxonomy-handler.php';
+        require_once QRY_PLUGIN_DIR . 'includes/class-csv-processor.php';
+        require_once QRY_PLUGIN_DIR . 'includes/class-acf-handler.php';
+        require_once QRY_PLUGIN_DIR . 'includes/class-taxonomy-handler.php';
 
         // New metadata-focused exporters (v1.2.0+)
-        require_once RIA_DM_PLUGIN_DIR . 'includes/class-metadata-exporter.php';
-        require_once RIA_DM_PLUGIN_DIR . 'includes/class-google-sheets.php';
+        require_once QRY_PLUGIN_DIR . 'includes/class-metadata-exporter.php';
+        require_once QRY_PLUGIN_DIR . 'includes/class-google-sheets.php';
 
         // Importer
-        require_once RIA_DM_PLUGIN_DIR . 'includes/class-importer.php';
+        require_once QRY_PLUGIN_DIR . 'includes/class-importer.php';
+
+        // Site scanner (v2.0.0+)
+        require_once QRY_PLUGIN_DIR . 'includes/class-site-scanner.php';
 
         // Admin interface
-        require_once RIA_DM_PLUGIN_DIR . 'includes/class-admin.php';
+        require_once QRY_PLUGIN_DIR . 'includes/class-admin.php';
 
         // GitHub auto-updater
-        require_once RIA_DM_PLUGIN_DIR . 'includes/class-github-updater.php';
+        require_once QRY_PLUGIN_DIR . 'includes/class-github-updater.php';
 
         // Diagnostic tools (can be accessed via URL parameter)
-        if (is_admin() && isset($_GET['page']) && $_GET['page'] === 'ria-data-manager-diagnostic') {
-            require_once RIA_DM_PLUGIN_DIR . 'includes/diagnostic-acf-taxonomies.php';
+        if (is_admin() && isset($_GET['page']) && $_GET['page'] === 'quarry-diagnostic') {
+            require_once QRY_PLUGIN_DIR . 'includes/diagnostic-acf-taxonomies.php';
         }
 
         // Legacy exporters (deprecated - kept for reference only)
         // These are no longer loaded by default as they produce files too large for Google Sheets
-        // require_once RIA_DM_PLUGIN_DIR . 'includes/class-exporter.php';
-        // require_once RIA_DM_PLUGIN_DIR . 'includes/class-rest-exporter.php';
-        // require_once RIA_DM_PLUGIN_DIR . 'includes/class-exporter-improved.php';
+        // require_once QRY_PLUGIN_DIR . 'includes/class-exporter.php';
+        // require_once QRY_PLUGIN_DIR . 'includes/class-rest-exporter.php';
+        // require_once QRY_PLUGIN_DIR . 'includes/class-exporter-improved.php';
     }
     
     /**
@@ -111,11 +119,11 @@ class RIA_Data_Manager {
         
         // Initialize admin interface
         if (is_admin()) {
-            RIA_DM_Admin::get_instance();
+            QRY_Admin::get_instance();
         }
 
         // Initialize GitHub updater
-        $updater = new RIA_DM_GitHub_Updater();
+        $updater = new QRY_GitHub_Updater();
         $updater->init();
     }
     
@@ -136,7 +144,7 @@ class RIA_Data_Manager {
         ?>
         <div class="notice notice-warning">
             <p>
-                <strong>RIA Data Manager:</strong> 
+                <strong>Quarry:</strong> 
                 Advanced Custom Fields (ACF) is recommended for full functionality. 
                 Some features may be limited without ACF.
             </p>
@@ -149,33 +157,33 @@ class RIA_Data_Manager {
      */
     public function enqueue_assets($hook) {
         // Only load on our plugin pages
-        if (strpos($hook, 'ria-data-manager') === false) {
+        if (strpos($hook, 'quarry') === false) {
             return;
         }
         
         wp_enqueue_style(
-            'ria-dm-admin',
-            RIA_DM_PLUGIN_URL . 'assets/css/admin.css',
+            'qry-admin',
+            QRY_PLUGIN_URL . 'assets/css/admin.css',
             array(),
-            RIA_DM_VERSION
+            QRY_VERSION
         );
         
         wp_enqueue_script(
-            'ria-dm-admin',
-            RIA_DM_PLUGIN_URL . 'assets/js/admin.js',
+            'qry-admin',
+            QRY_PLUGIN_URL . 'assets/js/admin.js',
             array('jquery'),
-            RIA_DM_VERSION,
+            QRY_VERSION,
             true
         );
         
         // Localize script for AJAX
-        wp_localize_script('ria-dm-admin', 'riaDM', array(
+        wp_localize_script('qry-admin', 'quarry', array(
             'ajaxurl' => admin_url('admin-ajax.php'),
-            'nonce' => wp_create_nonce('ria_dm_nonce'),
+            'nonce' => wp_create_nonce('qry_nonce'),
             'strings' => array(
-                'processing' => __('Processing...', 'ria-data-manager'),
-                'complete' => __('Complete!', 'ria-data-manager'),
-                'error' => __('Error occurred', 'ria-data-manager'),
+                'processing' => __('Processing...', 'quarry'),
+                'complete' => __('Complete!', 'quarry'),
+                'error' => __('Error occurred', 'quarry'),
             )
         ));
     }
@@ -184,12 +192,12 @@ class RIA_Data_Manager {
 /**
  * Initialize the plugin
  */
-function ria_dm_init() {
-    return RIA_Data_Manager::get_instance();
+function qry_init() {
+    return Quarry::get_instance();
 }
 
 // Start the plugin
-add_action('plugins_loaded', 'ria_dm_init');
+add_action('plugins_loaded', 'qry_init');
 
 /**
  * Get configuration value
@@ -198,8 +206,8 @@ add_action('plugins_loaded', 'ria_dm_init');
  * @param mixed $default Default value if key not found
  * @return mixed Configuration value or default
  */
-function ria_dm_get_config($key, $default = null) {
-    $config = RIA_DM_CONFIG;
+function qry_get_config($key, $default = null) {
+    $config = QRY_CONFIG;
     
     // Support dot notation for nested values
     if (strpos($key, '.') !== false) {
@@ -223,14 +231,14 @@ function ria_dm_get_config($key, $default = null) {
 register_activation_hook(__FILE__, function() {
     // Create upload directory if it doesn't exist
     $upload_dir = wp_upload_dir();
-    $ria_dm_dir = $upload_dir['basedir'] . '/ria-data-manager';
+    $qry_dir = $upload_dir['basedir'] . '/quarry';
     
-    if (!file_exists($ria_dm_dir)) {
-        wp_mkdir_p($ria_dm_dir);
+    if (!file_exists($qry_dir)) {
+        wp_mkdir_p($qry_dir);
     }
     
     // Add index.php to prevent directory listing
-    $index_file = $ria_dm_dir . '/index.php';
+    $index_file = $qry_dir . '/index.php';
     if (!file_exists($index_file)) {
         file_put_contents($index_file, '<?php // Silence is golden');
     }
@@ -242,10 +250,10 @@ register_activation_hook(__FILE__, function() {
 register_deactivation_hook(__FILE__, function() {
     // Clean up temporary files older than 24 hours
     $upload_dir = wp_upload_dir();
-    $ria_dm_dir = $upload_dir['basedir'] . '/ria-data-manager';
+    $qry_dir = $upload_dir['basedir'] . '/quarry';
     
-    if (file_exists($ria_dm_dir)) {
-        $files = glob($ria_dm_dir . '/*');
+    if (file_exists($qry_dir)) {
+        $files = glob($qry_dir . '/*');
         $now = time();
         
         foreach ($files as $file) {

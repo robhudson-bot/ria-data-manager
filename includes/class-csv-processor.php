@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class RIA_DM_CSV_Processor {
+class QRY_CSV_Processor {
     
     /**
      * Maximum rows per batch
@@ -25,7 +25,7 @@ class RIA_DM_CSV_Processor {
      */
     public static function write_csv($filename, $headers, $data) {
         $upload_dir = wp_upload_dir();
-        $file_path = $upload_dir['basedir'] . '/ria-data-manager/' . sanitize_file_name($filename);
+        $file_path = $upload_dir['basedir'] . '/quarry/' . sanitize_file_name($filename);
         
         // Open file for writing
         $handle = fopen($file_path, 'w');
@@ -160,7 +160,7 @@ class RIA_DM_CSV_Processor {
         $file_url = str_replace($upload_dir['basedir'], $upload_dir['baseurl'], $file_path);
         
         // Add nonce for security
-        $nonce = wp_create_nonce('ria_dm_download_' . basename($file_path));
+        $nonce = wp_create_nonce('qry_download_' . basename($file_path));
         return add_query_arg('nonce', $nonce, $file_url);
     }
     
@@ -171,13 +171,13 @@ class RIA_DM_CSV_Processor {
      */
     public static function clean_old_files($days = 1) {
         $upload_dir = wp_upload_dir();
-        $ria_dm_dir = $upload_dir['basedir'] . '/ria-data-manager';
+        $qry_dir = $upload_dir['basedir'] . '/quarry';
         
-        if (!file_exists($ria_dm_dir)) {
+        if (!file_exists($qry_dir)) {
             return;
         }
         
-        $files = glob($ria_dm_dir . '/*.csv');
+        $files = glob($qry_dir . '/*.csv');
         $cutoff_time = time() - ($days * 86400);
         
         foreach ($files as $file) {

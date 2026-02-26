@@ -42,7 +42,7 @@ define('DEPLOY_ENABLE_NOTIFICATIONS', true);
 /**
  * GitHub repository (format: username/repo-name)
  */
-define('DEPLOY_GITHUB_REPO', 'robhudson-bot/ria-data-manager');
+define('DEPLOY_GITHUB_REPO', 'robhudson-bot/quarry');
 
 /**
  * Branch to deploy (usually 'main' or 'master')

@@ -7,7 +7,7 @@
  * 2. Compare standard vs improved exports
  * 3. Export via REST API for maximum reliability
  * 
- * Usage: Place in wp-content/plugins/ria-data-manager/ and access via admin menu
+ * Usage: Place in wp-content/plugins/quarry/ and access via admin menu
  */
 
 if (!defined('ABSPATH')) {
@@ -15,30 +15,30 @@ if (!defined('ABSPATH')) {
 }
 
 // Add test page to admin menu
-add_action('admin_menu', 'ria_dm_add_test_page');
-function ria_dm_add_test_page() {
+add_action('admin_menu', 'qry_add_test_page');
+function qry_add_test_page() {
     add_submenu_page(
-        'ria-data-manager',
+        'quarry',
         'Export Tester',
         'Export Tester',
         'manage_options',
-        'ria-dm-test-export',
-        'ria_dm_render_test_page'
+        'qry-test-export',
+        'qry_render_test_page'
     );
 }
 
-function ria_dm_render_test_page() {
+function qry_render_test_page() {
     if (!current_user_can('manage_options')) {
         wp_die('Insufficient permissions');
     }
     
     // Handle form submission
     $results = array();
-    if (isset($_POST['test_export']) && check_admin_referer('ria_dm_test_export')) {
+    if (isset($_POST['test_export']) && check_admin_referer('qry_test_export')) {
         $post_type = sanitize_text_field($_POST['post_type']);
         $export_method = sanitize_text_field($_POST['export_method']);
         
-        require_once RIA_DM_PLUGIN_DIR . 'includes/class-exporter-improved.php';
+        require_once QRY_PLUGIN_DIR . 'includes/class-exporter-improved.php';
         
         $args = array(
             'post_type' => $post_type,
@@ -93,19 +93,19 @@ function ria_dm_render_test_page() {
                             'file' => $file1,
                             'time' => $time1,
                             'size' => !is_wp_error($file1) ? filesize($file1) : 0,
-                            'download' => !is_wp_error($file1) ? RIA_DM_CSV_Processor::get_download_url($file1) : null,
+                            'download' => !is_wp_error($file1) ? QRY_CSV_Processor::get_download_url($file1) : null,
                         ),
                         'Improved' => array(
                             'file' => $file2,
                             'time' => $time2,
                             'size' => !is_wp_error($file2) ? filesize($file2) : 0,
-                            'download' => !is_wp_error($file2) ? RIA_DM_CSV_Processor::get_download_url($file2) : null,
+                            'download' => !is_wp_error($file2) ? QRY_CSV_Processor::get_download_url($file2) : null,
                         ),
                         'REST API' => array(
                             'file' => $file3,
                             'time' => $time3,
                             'size' => !is_wp_error($file3) ? filesize($file3) : 0,
-                            'download' => !is_wp_error($file3) ? RIA_DM_CSV_Processor::get_download_url($file3) : null,
+                            'download' => !is_wp_error($file3) ? QRY_CSV_Processor::get_download_url($file3) : null,
                         ),
                     ),
                 );
@@ -125,7 +125,7 @@ function ria_dm_render_test_page() {
                     'file' => $file_path,
                     'time' => round($time, 3),
                     'size' => filesize($file_path),
-                    'download_url' => RIA_DM_CSV_Processor::get_download_url($file_path),
+                    'download_url' => QRY_CSV_Processor::get_download_url($file_path),
                 );
             }
         }
@@ -143,7 +143,7 @@ function ria_dm_render_test_page() {
             <p>This tool helps you test and compare different export methods to find the best one for your Pages.</p>
             
             <form method="post">
-                <?php wp_nonce_field('ria_dm_test_export'); ?>
+                <?php wp_nonce_field('qry_test_export'); ?>
                 
                 <table class="form-table">
                     <tr>

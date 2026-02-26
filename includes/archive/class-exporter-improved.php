@@ -94,7 +94,7 @@ class RIA_DM_Exporter_Improved {
         }
         
         // Clean old files
-        RIA_DM_CSV_Processor::clean_old_files(1);
+        QRY_CSV_Processor::clean_old_files(1);
         
         return $file_path;
     }
@@ -494,7 +494,7 @@ class RIA_DM_Exporter_Improved {
      */
     private static function write_csv_improved($filename, $headers, $data) {
         $upload_dir = wp_upload_dir();
-        $file_path = $upload_dir['basedir'] . '/ria-data-manager/' . sanitize_file_name($filename);
+        $file_path = $upload_dir['basedir'] . '/quarry/' . sanitize_file_name($filename);
         
         // Ensure directory exists
         $dir = dirname($file_path);
@@ -573,7 +573,7 @@ class RIA_DM_Exporter_Improved {
         
         // ACF fields
         if ($args['include_acf'] && class_exists('ACF')) {
-            $acf_fields = RIA_DM_ACF_Handler::get_fields_for_post_type($args['post_type']);
+            $acf_fields = QRY_ACF_Handler::get_fields_for_post_type($args['post_type']);
             foreach ($acf_fields as $field_name => $field_data) {
                 $headers[] = 'acf_' . $field_name;
             }

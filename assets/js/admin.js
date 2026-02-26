@@ -1,5 +1,5 @@
 /**
- * RIA Data Manager Admin Scripts
+ * Quarry Admin Scripts
  */
 
 (function($) {
@@ -9,13 +9,13 @@
      * Initialize on document ready
      */
     $(document).ready(function() {
-        RIA_DM_Admin.init();
+        QRY_Admin.init();
     });
     
     /**
      * Main Admin Object
      */
-    var RIA_DM_Admin = {
+    var QRY_Admin = {
         
         /**
          * Initialize
@@ -33,8 +33,8 @@
             $('#csv_file').on('change', this.handleFileChange);
             
             // Form validation
-            $('#ria-dm-export-form').on('submit', this.validateExportForm);
-            $('#ria-dm-import-form').on('submit', this.validateImportForm);
+            $('#qry-export-form').on('submit', this.validateExportForm);
+            $('#qry-import-form').on('submit', this.validateImportForm);
             
             // Post type change - could trigger ACF field detection
             $('#post_type').on('change', this.handlePostTypeChange);
@@ -52,7 +52,7 @@
                     if (file) {
                         var maxSize = 50 * 1024 * 1024; // 50MB
                         if (file.size > maxSize) {
-                            alert(riaDM.strings.error + ': File size exceeds 50MB limit');
+                            alert(quarry.strings.error + ': File size exceeds 50MB limit');
                             $(this).val('');
                             return false;
                         }
@@ -129,9 +129,9 @@
          * Show progress
          */
         showProgress: function(container, message) {
-            var $progress = $(container).find('.ria-dm-progress');
+            var $progress = $(container).find('.qry-progress');
             if ($progress.length) {
-                $progress.find('.ria-dm-status-text').text(message || 'Processing...');
+                $progress.find('.qry-status-text').text(message || 'Processing...');
                 $progress.show();
             }
         },
@@ -140,7 +140,7 @@
          * Hide progress
          */
         hideProgress: function(container) {
-            var $progress = $(container).find('.ria-dm-progress');
+            var $progress = $(container).find('.qry-progress');
             if ($progress.length) {
                 $progress.hide();
             }
@@ -150,7 +150,7 @@
          * Update progress bar
          */
         updateProgress: function(container, percent) {
-            var $fill = $(container).find('.ria-dm-progress-fill');
+            var $fill = $(container).find('.qry-progress-fill');
             if ($fill.length) {
                 $fill.css('width', percent + '%');
             }
@@ -160,7 +160,7 @@
          * Show success message
          */
         showSuccess: function(container, message) {
-            var $result = $(container).find('.ria-dm-result');
+            var $result = $(container).find('.qry-result');
             if ($result.length) {
                 $result
                     .removeClass('notice-error')
@@ -179,12 +179,12 @@
          * Show error message
          */
         showError: function(container, message) {
-            var $result = $(container).find('.ria-dm-result');
+            var $result = $(container).find('.qry-result');
             if ($result.length) {
                 $result
                     .removeClass('notice-success')
                     .addClass('notice notice-error')
-                    .html('<p><strong>' + riaDM.strings.error + ':</strong> ' + message + '</p>')
+                    .html('<p><strong>' + quarry.strings.error + ':</strong> ' + message + '</p>')
                     .show();
                 
                 // Scroll to result
@@ -248,7 +248,7 @@
          */
         setupDragDrop: function() {
             var $fileInput = $('#csv_file');
-            var $form = $('#ria-dm-import-form');
+            var $form = $('#qry-import-form');
             
             if (!$fileInput.length) return;
             
@@ -287,6 +287,6 @@
     });
     
     // Make admin object globally available
-    window.RIA_DM_Admin = RIA_DM_Admin;
+    window.QRY_Admin = QRY_Admin;
     
 })(jQuery);

@@ -4,7 +4,7 @@
  *
  * Handles exporting to and importing from Google Sheets for collaborative editing
  *
- * @package RIA_Data_Manager
+ * @package Quarry
  * @since 1.2.0
  */
 
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class RIA_DM_Google_Sheets {
+class QRY_Google_Sheets {
 
     /**
      * Export to Google Sheets
@@ -22,7 +22,7 @@ class RIA_DM_Google_Sheets {
      */
     public static function export_to_sheets($args = array()) {
         // First, create metadata-only export
-        $csv_path = RIA_DM_Metadata_Exporter::export($args);
+        $csv_path = QRY_Metadata_Exporter::export($args);
 
         if (is_wp_error($csv_path)) {
             return $csv_path;
@@ -42,7 +42,7 @@ class RIA_DM_Google_Sheets {
         $result = array(
             'success' => true,
             'csv_path' => $csv_path,
-            'download_url' => RIA_DM_CSV_Processor::get_download_url($csv_path),
+            'download_url' => QRY_CSV_Processor::get_download_url($csv_path),
             'instructions' => self::get_manual_upload_instructions(),
             'sheets_compatible' => true,
         );
@@ -57,7 +57,7 @@ class RIA_DM_Google_Sheets {
      */
     private static function get_manual_upload_instructions() {
         return '
-        <div class="ria-dm-instructions">
+        <div class="qry-instructions">
             <h3>Upload to Google Sheets</h3>
             <ol>
                 <li>Download the CSV file using the link above</li>
@@ -338,7 +338,7 @@ class RIA_DM_Google_Sheets {
      */
     public static function is_configured() {
         // Check for API credentials
-        $credentials = get_option('ria_dm_google_sheets_credentials');
+        $credentials = get_option('qry_google_sheets_credentials');
         return !empty($credentials);
     }
 

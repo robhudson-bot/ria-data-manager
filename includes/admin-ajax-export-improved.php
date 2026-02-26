@@ -15,7 +15,7 @@
  * AJAX export handler - IMPROVED VERSION
  */
 public function ajax_export() {
-    check_ajax_referer('ria_dm_nonce', 'nonce');
+    check_ajax_referer('qry_nonce', 'nonce');
     
     if (!current_user_can('manage_options')) {
         wp_send_json_error(array('message' => 'Insufficient permissions'));
@@ -80,7 +80,7 @@ public function ajax_export() {
     }
     
     // Get download URL
-    $download_url = RIA_DM_CSV_Processor::get_download_url($result);
+    $download_url = QRY_CSV_Processor::get_download_url($result);
     
     wp_send_json_success(array(
         'message' => sprintf('Export completed successfully using %s method', $method_label),

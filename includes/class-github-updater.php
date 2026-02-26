@@ -5,7 +5,7 @@
  * Enables automatic updates from GitHub releases.
  * Checks for new releases and integrates with WordPress update system.
  *
- * @package RIA_Data_Manager
+ * @package Quarry
  * @since   1.3.0
  */
 
@@ -15,13 +15,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Class RIA_DM_GitHub_Updater
+ * Class QRY_GitHub_Updater
  *
  * Handles plugin updates from GitHub releases.
  *
  * @since 1.3.0
  */
-class RIA_DM_GitHub_Updater {
+class QRY_GitHub_Updater {
 
 	/**
 	 * GitHub repository owner.
@@ -35,7 +35,7 @@ class RIA_DM_GitHub_Updater {
 	 *
 	 * @var string
 	 */
-	private $repo = 'ria-data-manager';
+	private $repo = 'quarry';
 
 	/**
 	 * Plugin slug.
@@ -61,7 +61,7 @@ class RIA_DM_GitHub_Updater {
 	/**
 	 * GitHub Personal Access Token for accessing the release repo.
 	 *
-	 * Uses the RIA_DM_UPDATE_TOKEN constant if defined and non-empty.
+	 * Uses the QUARRY_UPDATE_TOKEN constant if defined and non-empty.
 	 *
 	 * @var string
 	 */
@@ -78,12 +78,12 @@ class RIA_DM_GitHub_Updater {
 	 * Constructor.
 	 */
 	public function __construct() {
-		$this->slug     = 'ria-data-manager';
-		$this->basename = RIA_DM_PLUGIN_BASENAME;
-		$this->version  = RIA_DM_VERSION;
+		$this->slug     = 'quarry';
+		$this->basename = QRY_PLUGIN_BASENAME;
+		$this->version  = QRY_VERSION;
 
-		if ( defined( 'RIA_DM_UPDATE_TOKEN' ) && RIA_DM_UPDATE_TOKEN ) {
-			$this->token = RIA_DM_UPDATE_TOKEN;
+		if ( defined( 'QUARRY_UPDATE_TOKEN' ) && QUARRY_UPDATE_TOKEN ) {
+			$this->token = QUARRY_UPDATE_TOKEN;
 		} else {
 			$this->token = '';
 		}
@@ -194,7 +194,7 @@ class RIA_DM_GitHub_Updater {
 		}
 
 		// Check cache first.
-		$cached = get_transient( 'ria_dm_github_release' );
+		$cached = get_transient( 'qry_github_release' );
 		if ( false !== $cached ) {
 			$this->github_response = $cached;
 			return $cached;
@@ -242,7 +242,7 @@ class RIA_DM_GitHub_Updater {
 		}
 
 		// Cache for 6 hours.
-		set_transient( 'ria_dm_github_release', $data, 6 * HOUR_IN_SECONDS );
+		set_transient( 'qry_github_release', $data, 6 * HOUR_IN_SECONDS );
 
 		$this->github_response = $data;
 		return $data;
@@ -282,7 +282,7 @@ class RIA_DM_GitHub_Updater {
 					'icons'       => array(),
 					'banners'     => array(),
 					'tested'      => get_bloginfo( 'version' ),
-					'requires'    => RIA_DM_MIN_WP_VERSION,
+					'requires'    => QRY_MIN_WP_VERSION,
 				);
 			}
 		}
@@ -344,17 +344,17 @@ class RIA_DM_GitHub_Updater {
 		$github_version = ltrim( $release->tag_name, 'v' );
 
 		$plugin_info = (object) array(
-			'name'          => 'RIA Data Manager',
+			'name'          => 'Quarry',
 			'slug'          => $this->slug,
 			'version'       => $github_version,
-			'author'        => '<a href="https://the-ria.ca">Rob Hudson</a>',
+			'author'        => '<a href="https://robhudson.ca">Rob Hudson</a>',
 			'homepage'      => 'https://github.com/' . $this->owner . '/' . $this->repo,
-			'requires'      => RIA_DM_MIN_WP_VERSION,
+			'requires'      => QRY_MIN_WP_VERSION,
 			'tested'        => get_bloginfo( 'version' ),
 			'downloaded'    => 0,
 			'last_updated'  => $release->published_at,
 			'sections'      => array(
-				'description' => 'Export and import WordPress metadata (posts, pages, custom post types) with ACF fields for collaborative editing in Google Sheets.',
+				'description' => 'WordPress site scanner and data manager. Discover your site structure, export/import metadata with ACF fields, and collaborate via Google Sheets.',
 				'changelog'   => $this->parse_changelog( $release->body ),
 			),
 			'download_link' => $this->get_download_url( $release ),
@@ -394,7 +394,7 @@ class RIA_DM_GitHub_Updater {
 	 * Rename folder after install.
 	 *
 	 * GitHub's zipball has a folder like "owner-repo-hash".
-	 * We need to rename it to "ria-data-manager".
+	 * We need to rename it to "quarry".
 	 *
 	 * @param bool  $response   Install response.
 	 * @param array $hook_extra Extra args.
@@ -437,14 +437,14 @@ class RIA_DM_GitHub_Updater {
 		}
 
 		$check_url = wp_nonce_url(
-			admin_url( 'plugins.php?ria_dm_check_update=1' ),
-			'ria_dm_check_update'
+			admin_url( 'plugins.php?qry_check_update=1' ),
+			'qry_check_update'
 		);
 
 		$links[] = sprintf(
 			'<a href="%s">%s</a>',
 			esc_url( $check_url ),
-			esc_html__( 'Check for updates', 'ria-data-manager' )
+			esc_html__( 'Check for updates', 'quarry' )
 		);
 
 		return $links;
@@ -454,11 +454,11 @@ class RIA_DM_GitHub_Updater {
 	 * Handle manual update check.
 	 */
 	public function handle_manual_check() {
-		if ( ! isset( $_GET['ria_dm_check_update'] ) ) {
+		if ( ! isset( $_GET['qry_check_update'] ) ) {
 			return;
 		}
 
-		if ( ! wp_verify_nonce( $_GET['_wpnonce'], 'ria_dm_check_update' ) ) {
+		if ( ! wp_verify_nonce( $_GET['_wpnonce'], 'qry_check_update' ) ) {
 			return;
 		}
 
@@ -467,7 +467,7 @@ class RIA_DM_GitHub_Updater {
 		}
 
 		// Clear cached data.
-		delete_transient( 'ria_dm_github_release' );
+		delete_transient( 'qry_github_release' );
 		delete_site_transient( 'update_plugins' );
 
 		// Force refresh.
@@ -477,7 +477,7 @@ class RIA_DM_GitHub_Updater {
 		wp_safe_redirect(
 			add_query_arg(
 				array(
-					'ria_dm_checked' => '1',
+					'qry_checked' => '1',
 				),
 				admin_url( 'plugins.php' )
 			)

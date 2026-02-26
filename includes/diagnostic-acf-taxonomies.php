@@ -5,7 +5,7 @@
  * Run this on the live site to debug why fields aren't appearing in export
  *
  * Usage: Add this to the plugin, then visit:
- * https://the-ria.ca/wp-admin/admin.php?page=ria-data-manager-diagnostic
+ * https://example.com/wp-admin/admin.php?page=quarry-diagnostic
  */
 
 if (!defined('ABSPATH')) {
@@ -16,18 +16,18 @@ if (!defined('ABSPATH')) {
 add_action('admin_menu', function() {
     add_submenu_page(
         null, // Hidden from menu
-        'RIA DM Diagnostic',
-        'RIA DM Diagnostic',
+        'Quarry Diagnostic',
+        'Quarry Diagnostic',
         'manage_options',
-        'ria-data-manager-diagnostic',
-        'ria_dm_diagnostic_page'
+        'quarry-diagnostic',
+        'qry_diagnostic_page'
     );
 });
 
-function ria_dm_diagnostic_page() {
+function qry_diagnostic_page() {
     ?>
     <div class="wrap">
-        <h1>RIA Data Manager - ACF & Taxonomy Diagnostic</h1>
+        <h1>Quarry - ACF & Taxonomy Diagnostic</h1>
 
         <?php
         echo '<div style="background: #fff; padding: 20px; margin: 20px 0; border: 1px solid #ccc;">';
@@ -122,15 +122,15 @@ function ria_dm_diagnostic_page() {
 
         // Test 5: Check what our exporter would detect
         echo '<h2>5. What Our Exporter Would Find</h2>';
-        if (class_exists('RIA_DM_Metadata_Exporter')) {
+        if (class_exists('QRY_Metadata_Exporter')) {
             echo '<p>Testing the metadata exporter\'s ACF detection method...</p>';
 
             // Simulate what the exporter does
             $field_names = array();
 
             // Method 1: Location-based
-            if ($acf_active && class_exists('RIA_DM_ACF_Handler')) {
-                $fields_by_location = RIA_DM_ACF_Handler::get_fields_for_post_type('page');
+            if ($acf_active && class_exists('QRY_ACF_Handler')) {
+                $fields_by_location = QRY_ACF_Handler::get_fields_for_post_type('page');
                 foreach ($fields_by_location as $field_name => $field_data) {
                     $field_names[$field_name] = 'location-based';
                 }
@@ -171,14 +171,14 @@ function ria_dm_diagnostic_page() {
 
             wp_reset_postdata();
         } else {
-            echo '<p style="color: red;">❌ RIA_DM_Metadata_Exporter class not found!</p>';
+            echo '<p style="color: red;">❌ QRY_Metadata_Exporter class not found!</p>';
         }
 
         // Test 6: Check plugin version
         echo '<h2>6. Plugin Version Check</h2>';
-        if (defined('RIA_DM_VERSION')) {
-            echo '<p>Plugin Version: <strong>' . RIA_DM_VERSION . '</strong></p>';
-            if (RIA_DM_VERSION === '1.2.0') {
+        if (defined('QRY_VERSION')) {
+            echo '<p>Plugin Version: <strong>' . QRY_VERSION . '</strong></p>';
+            if (QRY_VERSION === '1.2.0') {
                 echo '<p style="color: green;">✅ Running v1.2.0 (latest with improved ACF detection)</p>';
             } else {
                 echo '<p style="color: orange;">⚠️ Not running v1.2.0 - may need to update</p>';

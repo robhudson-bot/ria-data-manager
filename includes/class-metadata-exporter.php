@@ -5,7 +5,7 @@
  * Exports only metadata fields for collaborative editing in Google Sheets.
  * Excludes large content fields that exceed Google Sheets limits.
  *
- * @package RIA_Data_Manager
+ * @package Quarry
  * @since 1.2.0
  */
 
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class RIA_DM_Metadata_Exporter {
+class QRY_Metadata_Exporter {
 
     /**
      * Export metadata only (no post_content)
@@ -102,7 +102,7 @@ class RIA_DM_Metadata_Exporter {
         }
 
         // Clean old files
-        RIA_DM_CSV_Processor::clean_old_files(1);
+        QRY_CSV_Processor::clean_old_files(1);
 
         return $file_path;
     }
@@ -185,7 +185,7 @@ class RIA_DM_Metadata_Exporter {
         }
 
         // ACF fields - improved detection
-        if ($args['include_acf'] && RIA_DM_ACF_Handler::is_acf_active()) {
+        if ($args['include_acf'] && QRY_ACF_Handler::is_acf_active()) {
             $acf_fields = self::get_all_acf_fields_for_export($args['post_type']);
             foreach ($acf_fields as $field_name) {
                 $headers[] = 'acf_' . $field_name;
@@ -215,7 +215,7 @@ class RIA_DM_Metadata_Exporter {
         $field_names = array();
 
         // Method 1: Try standard location-based detection
-        $fields_by_location = RIA_DM_ACF_Handler::get_fields_for_post_type($post_type);
+        $fields_by_location = QRY_ACF_Handler::get_fields_for_post_type($post_type);
         foreach ($fields_by_location as $field_name => $field_data) {
             $field_names[$field_name] = true;
         }
@@ -469,7 +469,7 @@ class RIA_DM_Metadata_Exporter {
                             $field_object = get_field_object($field_name, $post_id);
                             if ($field_object && isset($field_object['value'])) {
                                 // Use ACF Handler's type-aware formatting
-                                $value = RIA_DM_ACF_Handler::format_field_for_export(
+                                $value = QRY_ACF_Handler::format_field_for_export(
                                     $field_object['value'],
                                     $field_object['type']
                                 );
@@ -521,7 +521,7 @@ class RIA_DM_Metadata_Exporter {
      */
     private static function write_metadata_csv($filename, $headers, $data) {
         $upload_dir = wp_upload_dir();
-        $file_path = $upload_dir['basedir'] . '/ria-data-manager/' . sanitize_file_name($filename);
+        $file_path = $upload_dir['basedir'] . '/quarry/' . sanitize_file_name($filename);
 
         // Ensure directory exists
         $dir = dirname($file_path);

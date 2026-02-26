@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class RIA_DM_Taxonomy_Handler {
+class QRY_Taxonomy_Handler {
     
     /**
      * Get all taxonomies for a post type

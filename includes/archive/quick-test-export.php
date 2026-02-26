@@ -6,8 +6,8 @@
  * exporting Pages via the REST API method without modifying any code.
  * 
  * USAGE:
- * 1. Upload this file to: wp-content/plugins/ria-data-manager/
- * 2. Go to: yoursite.com/wp-content/plugins/ria-data-manager/quick-test-export.php
+ * 1. Upload this file to: wp-content/plugins/quarry/
+ * 2. Go to: yoursite.com/wp-content/plugins/quarry/quick-test-export.php
  * 3. OR add to functions.php and visit: yoursite.com/?ria_test_export=1
  * 
  * This will export all published Pages and show you the download link.
@@ -49,7 +49,7 @@ if (is_wp_error($result)) {
     echo '<p>' . esc_html($result->get_error_message()) . '</p>';
     echo '</div>';
 } else {
-    $download_url = RIA_DM_CSV_Processor::get_download_url($result);
+    $download_url = QRY_CSV_Processor::get_download_url($result);
     $filesize = filesize($result);
     
     echo '<div style="color: green; padding: 20px; background: #efe;">';
@@ -75,15 +75,15 @@ echo '<p><a href="' . admin_url('tools.php?page=ria-data-manager') . '">Back to 
 
 // Method 2: Add to functions.php (uncomment to use)
 /*
-add_action('init', 'ria_dm_quick_test');
-function ria_dm_quick_test() {
+add_action('init', 'qry_quick_test');
+function qry_quick_test() {
     if (!isset($_GET['ria_test_export']) || !current_user_can('manage_options')) {
         return;
     }
     
     // Load improved exporter if not already loaded
     if (!class_exists('RIA_DM_Exporter_Improved')) {
-        require_once(WP_PLUGIN_DIR . '/ria-data-manager/includes/class-exporter-improved.php');
+        require_once(WP_PLUGIN_DIR . '/quarry/includes/class-exporter-improved.php');
     }
     
     $args = array(
@@ -98,7 +98,7 @@ function ria_dm_quick_test() {
     $result = RIA_DM_Exporter_Improved::export($args);
     
     if (!is_wp_error($result)) {
-        $download_url = RIA_DM_CSV_Processor::get_download_url($result);
+        $download_url = QRY_CSV_Processor::get_download_url($result);
         wp_redirect($download_url);
         exit;
     } else {
@@ -108,8 +108,8 @@ function ria_dm_quick_test() {
 */
 
 // Method 3: WordPress Admin AJAX (most integrated)
-add_action('wp_ajax_ria_quick_test_export', 'ria_dm_quick_test_ajax');
-function ria_dm_quick_test_ajax() {
+add_action('wp_ajax_ria_quick_test_export', 'qry_quick_test_ajax');
+function qry_quick_test_ajax() {
     if (!current_user_can('manage_options')) {
         wp_send_json_error('Insufficient permissions');
     }
@@ -151,7 +151,7 @@ function ria_dm_quick_test_ajax() {
     wp_send_json_success(array(
         'message' => 'Export completed',
         'method' => $method,
-        'download_url' => RIA_DM_CSV_Processor::get_download_url($result),
+        'download_url' => QRY_CSV_Processor::get_download_url($result),
         'filename' => basename($result),
         'filesize' => size_format(filesize($result)),
         'time' => round($time, 3) . 's',
@@ -159,8 +159,8 @@ function ria_dm_quick_test_ajax() {
 }
 
 // Add quick test button to admin bar
-add_action('admin_bar_menu', 'ria_dm_quick_test_admin_bar', 100);
-function ria_dm_quick_test_admin_bar($wp_admin_bar) {
+add_action('admin_bar_menu', 'qry_quick_test_admin_bar', 100);
+function qry_quick_test_admin_bar($wp_admin_bar) {
     if (!current_user_can('manage_options')) {
         return;
     }
@@ -177,9 +177,9 @@ function ria_dm_quick_test_admin_bar($wp_admin_bar) {
 }
 
 // Add JavaScript for quick export
-add_action('admin_footer', 'ria_dm_quick_test_js');
-add_action('wp_footer', 'ria_dm_quick_test_js');
-function ria_dm_quick_test_js() {
+add_action('admin_footer', 'qry_quick_test_js');
+add_action('wp_footer', 'qry_quick_test_js');
+function qry_quick_test_js() {
     if (!current_user_can('manage_options')) {
         return;
     }

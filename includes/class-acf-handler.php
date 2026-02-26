@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class RIA_DM_ACF_Handler {
+class QRY_ACF_Handler {
     
     /**
      * Check if ACF is active

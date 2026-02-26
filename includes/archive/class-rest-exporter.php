@@ -87,14 +87,14 @@ class RIA_DM_REST_Exporter {
         );
         
         // Write CSV
-        $file_path = RIA_DM_CSV_Processor::write_csv($filename, $headers, $data);
+        $file_path = QRY_CSV_Processor::write_csv($filename, $headers, $data);
         
         if (is_wp_error($file_path)) {
             return $file_path;
         }
         
         // Clean old files
-        RIA_DM_CSV_Processor::clean_old_files(1);
+        QRY_CSV_Processor::clean_old_files(1);
         
         return $file_path;
     }
@@ -191,12 +191,12 @@ class RIA_DM_REST_Exporter {
         }
         
         if ($args['include_taxonomies']) {
-            $taxonomy_headers = RIA_DM_Taxonomy_Handler::get_taxonomy_headers($args['post_type']);
+            $taxonomy_headers = QRY_Taxonomy_Handler::get_taxonomy_headers($args['post_type']);
             $headers = array_merge($headers, $taxonomy_headers);
         }
         
-        if ($args['include_acf'] && RIA_DM_ACF_Handler::is_acf_active()) {
-            $acf_headers = RIA_DM_ACF_Handler::get_field_headers($args['post_type']);
+        if ($args['include_acf'] && QRY_ACF_Handler::is_acf_active()) {
+            $acf_headers = QRY_ACF_Handler::get_field_headers($args['post_type']);
             $headers = array_merge($headers, $acf_headers);
         }
         
@@ -221,11 +221,11 @@ class RIA_DM_REST_Exporter {
         // Standard WordPress fields from REST response
         $row['ID'] = $post_id;
         $row['post_title'] = isset($post['title']['rendered']) ? 
-            RIA_DM_CSV_Processor::sanitize_csv_value($post['title']['rendered']) : '';
+            QRY_CSV_Processor::sanitize_csv_value($post['title']['rendered']) : '';
         $row['post_content'] = isset($post['content']['rendered']) ? 
-            RIA_DM_CSV_Processor::sanitize_csv_value($post['content']['rendered']) : '';
+            QRY_CSV_Processor::sanitize_csv_value($post['content']['rendered']) : '';
         $row['post_excerpt'] = isset($post['excerpt']['rendered']) ? 
-            RIA_DM_CSV_Processor::sanitize_csv_value($post['excerpt']['rendered']) : '';
+            QRY_CSV_Processor::sanitize_csv_value($post['excerpt']['rendered']) : '';
         $row['post_status'] = isset($post['status']) ? $post['status'] : '';
         $row['post_type'] = isset($post['type']) ? $post['type'] : '';
         $row['post_date'] = isset($post['date']) ? $post['date'] : '';
@@ -257,20 +257,20 @@ class RIA_DM_REST_Exporter {
         
         // Taxonomies from embedded data
         if ($args['include_taxonomies']) {
-            $taxonomy_data = RIA_DM_Taxonomy_Handler::export_terms($post_id, $post['type']);
+            $taxonomy_data = QRY_Taxonomy_Handler::export_terms($post_id, $post['type']);
             foreach ($taxonomy_data as $key => $value) {
                 if (isset($row[$key])) {
-                    $row[$key] = RIA_DM_CSV_Processor::sanitize_csv_value($value);
+                    $row[$key] = QRY_CSV_Processor::sanitize_csv_value($value);
                 }
             }
         }
         
         // ACF fields (still need to query directly as REST may not expose all ACF fields)
-        if ($args['include_acf'] && RIA_DM_ACF_Handler::is_acf_active()) {
-            $acf_data = RIA_DM_ACF_Handler::export_fields($post_id);
+        if ($args['include_acf'] && QRY_ACF_Handler::is_acf_active()) {
+            $acf_data = QRY_ACF_Handler::export_fields($post_id);
             foreach ($acf_data as $key => $value) {
                 if (isset($row[$key])) {
-                    $row[$key] = RIA_DM_CSV_Processor::sanitize_csv_value($value);
+                    $row[$key] = QRY_CSV_Processor::sanitize_csv_value($value);
                 }
             }
         }

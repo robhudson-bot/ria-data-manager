@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class RIA_DM_Admin {
+class QRY_Admin {
     
     /**
      * Single instance
@@ -30,9 +30,10 @@ class RIA_DM_Admin {
      */
     private function __construct() {
         add_action('admin_menu', array($this, 'add_admin_menu'));
-        add_action('wp_ajax_ria_dm_export', array($this, 'ajax_export'));
-        add_action('wp_ajax_ria_dm_import', array($this, 'ajax_import'));
-        add_action('wp_ajax_ria_dm_preview_import', array($this, 'ajax_preview_import'));
+        add_action('admin_init', array($this, 'handle_rescan'));
+        add_action('wp_ajax_qry_export', array($this, 'ajax_export'));
+        add_action('wp_ajax_qry_import', array($this, 'ajax_import'));
+        add_action('wp_ajax_qry_preview_import', array($this, 'ajax_preview_import'));
     }
     
     /**
@@ -40,10 +41,10 @@ class RIA_DM_Admin {
      */
     public function add_admin_menu() {
         add_management_page(
-            __('RIA Data Manager', 'ria-data-manager'),
-            __('RIA Data Manager', 'ria-data-manager'),
+            __('Quarry', 'quarry'),
+            __('Quarry', 'quarry'),
             'manage_options',
-            'ria-data-manager',
+            'quarry',
             array($this, 'render_admin_page')
         );
     }
@@ -52,29 +53,40 @@ class RIA_DM_Admin {
      * Render admin page
      */
     public function render_admin_page() {
-        $active_tab = isset($_GET['tab']) ? $_GET['tab'] : 'export';
-        
+        $active_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'dashboard';
+
         ?>
-        <div class="wrap ria-dm-admin">
+        <div class="wrap qry-admin">
             <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
-            
+
             <h2 class="nav-tab-wrapper">
-                <a href="?page=ria-data-manager&tab=export" 
-                   class="nav-tab <?php echo $active_tab === 'export' ? 'nav-tab-active' : ''; ?>">
-                    <?php _e('Export', 'ria-data-manager'); ?>
+                <a href="?page=quarry&tab=dashboard"
+                   class="nav-tab <?php echo $active_tab === 'dashboard' ? 'nav-tab-active' : ''; ?>">
+                    <?php _e('Dashboard', 'quarry'); ?>
                 </a>
-                <a href="?page=ria-data-manager&tab=import" 
+                <a href="?page=quarry&tab=export"
+                   class="nav-tab <?php echo $active_tab === 'export' ? 'nav-tab-active' : ''; ?>">
+                    <?php _e('Export', 'quarry'); ?>
+                </a>
+                <a href="?page=quarry&tab=import"
                    class="nav-tab <?php echo $active_tab === 'import' ? 'nav-tab-active' : ''; ?>">
-                    <?php _e('Import', 'ria-data-manager'); ?>
+                    <?php _e('Import', 'quarry'); ?>
                 </a>
             </h2>
-            
-            <div class="ria-dm-tab-content">
+
+            <div class="qry-tab-content">
                 <?php
-                if ($active_tab === 'export') {
-                    $this->render_export_tab();
-                } else {
-                    $this->render_import_tab();
+                switch ($active_tab) {
+                    case 'export':
+                        $this->render_export_tab();
+                        break;
+                    case 'import':
+                        $this->render_import_tab();
+                        break;
+                    case 'dashboard':
+                    default:
+                        $this->render_dashboard_tab();
+                        break;
                 }
                 ?>
             </div>
@@ -83,17 +95,47 @@ class RIA_DM_Admin {
     }
     
     /**
+     * Render dashboard tab
+     */
+    private function render_dashboard_tab() {
+        include QRY_PLUGIN_DIR . 'templates/dashboard-page.php';
+    }
+
+    /**
      * Render export tab
      */
     private function render_export_tab() {
-        include RIA_DM_PLUGIN_DIR . 'templates/export-page.php';
+        include QRY_PLUGIN_DIR . 'templates/export-page.php';
     }
-    
+
     /**
      * Render import tab
      */
     private function render_import_tab() {
-        include RIA_DM_PLUGIN_DIR . 'templates/import-page.php';
+        include QRY_PLUGIN_DIR . 'templates/import-page.php';
+    }
+
+    /**
+     * Handle rescan request from dashboard
+     */
+    public function handle_rescan() {
+        if ( ! isset( $_GET['qry_rescan'] ) ) {
+            return;
+        }
+
+        if ( ! wp_verify_nonce( $_GET['_wpnonce'], 'qry_rescan' ) ) {
+            return;
+        }
+
+        if ( ! current_user_can( 'manage_options' ) ) {
+            return;
+        }
+
+        QRY_Site_Scanner::clear_cache();
+        QRY_Site_Scanner::scan( true );
+
+        wp_safe_redirect( admin_url( 'tools.php?page=quarry&tab=dashboard&qry_rescanned=1' ) );
+        exit;
     }
     
     /**
@@ -102,7 +144,7 @@ class RIA_DM_Admin {
      * @since 1.2.0 - Simplified to only use metadata exporter
      */
     public function ajax_export() {
-        check_ajax_referer('ria_dm_nonce', 'nonce');
+        check_ajax_referer('qry_nonce', 'nonce');
 
         if (!current_user_can('manage_options')) {
             wp_send_json_error(array('message' => 'Insufficient permissions'));
@@ -131,7 +173,7 @@ class RIA_DM_Admin {
         );
 
         // Use metadata-only export (optimized for Google Sheets)
-        $result = RIA_DM_Metadata_Exporter::export($args);
+        $result = QRY_Metadata_Exporter::export($args);
 
         if (is_wp_error($result)) {
             wp_send_json_error(array(
@@ -140,8 +182,8 @@ class RIA_DM_Admin {
         }
 
         // Get download URL and stats
-        $download_url = RIA_DM_CSV_Processor::get_download_url($result);
-        $stats = RIA_DM_Metadata_Exporter::get_export_stats($result);
+        $download_url = QRY_CSV_Processor::get_download_url($result);
+        $stats = QRY_Metadata_Exporter::get_export_stats($result);
 
         wp_send_json_success(array(
             'message' => 'Metadata export completed - ready for Google Sheets',
@@ -158,7 +200,7 @@ class RIA_DM_Admin {
      * AJAX import handler
      */
     public function ajax_import() {
-        check_ajax_referer('ria_dm_nonce', 'nonce');
+        check_ajax_referer('qry_nonce', 'nonce');
         
         if (!current_user_can('manage_options')) {
             wp_send_json_error(array('message' => 'Insufficient permissions'));
@@ -179,7 +221,7 @@ class RIA_DM_Admin {
         
         // Move uploaded file
         $upload_dir = wp_upload_dir();
-        $target_dir = $upload_dir['basedir'] . '/ria-data-manager/';
+        $target_dir = $upload_dir['basedir'] . '/quarry/';
         $target_file = $target_dir . basename($file['name']);
         
         if (!file_exists($target_dir)) {
@@ -205,7 +247,7 @@ class RIA_DM_Admin {
         );
         
         // Perform import
-        $result = RIA_DM_Importer::import($target_file, $args);
+        $result = QRY_Importer::import($target_file, $args);
         
         // Clean up file
         @unlink($target_file);
@@ -224,7 +266,7 @@ class RIA_DM_Admin {
      * AJAX preview import handler - Shows before/after comparison
      */
     public function ajax_preview_import() {
-        check_ajax_referer('ria_dm_nonce', 'nonce');
+        check_ajax_referer('qry_nonce', 'nonce');
 
         if (!current_user_can('manage_options')) {
             wp_send_json_error(array('message' => 'Insufficient permissions'));
@@ -238,7 +280,7 @@ class RIA_DM_Admin {
         $file = $_FILES['csv_file'];
 
         // Read CSV
-        $csv_data = RIA_DM_CSV_Processor::read_csv($file['tmp_name']);
+        $csv_data = QRY_CSV_Processor::read_csv($file['tmp_name']);
 
         if (is_wp_error($csv_data)) {
             wp_send_json_error(array('message' => $csv_data->get_error_message()));

@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class RIA_DM_Importer {
+class QRY_Importer {
 
     /**
      * Log file path
@@ -21,7 +21,7 @@ class RIA_DM_Importer {
     private static function get_log_file() {
         if (self::$log_file === null) {
             $upload_dir = wp_upload_dir();
-            $log_dir = $upload_dir['basedir'] . '/ria-data-manager/logs/';
+            $log_dir = $upload_dir['basedir'] . '/quarry/logs/';
             if (!file_exists($log_dir)) {
                 wp_mkdir_p($log_dir);
             }
@@ -70,7 +70,7 @@ class RIA_DM_Importer {
                   ', default_post_type=' . ($args['default_post_type'] ?: 'from CSV'));
 
         // Read CSV file
-        $csv_data = RIA_DM_CSV_Processor::read_csv($file_path);
+        $csv_data = QRY_CSV_Processor::read_csv($file_path);
 
         if (is_wp_error($csv_data)) {
             self::log('ERROR: Failed to read CSV - ' . $csv_data->get_error_message());
@@ -80,7 +80,7 @@ class RIA_DM_Importer {
         self::log('CSV loaded: ' . count($csv_data['data']) . ' rows, ' . count($csv_data['headers']) . ' columns');
 
         // Validate CSV structure
-        $validation = RIA_DM_CSV_Processor::validate_csv_structure($csv_data['headers']);
+        $validation = QRY_CSV_Processor::validate_csv_structure($csv_data['headers']);
         if (is_wp_error($validation)) {
             self::log('ERROR: CSV validation failed - ' . $validation->get_error_message());
             return $validation;
@@ -211,7 +211,7 @@ class RIA_DM_Importer {
         // Import taxonomies
         $taxonomy_fields = self::extract_taxonomy_fields($row);
         if (!empty($taxonomy_fields)) {
-            RIA_DM_Taxonomy_Handler::import_terms(
+            QRY_Taxonomy_Handler::import_terms(
                 $post_id,
                 $taxonomy_fields,
                 $args['create_taxonomies']
@@ -220,8 +220,8 @@ class RIA_DM_Importer {
         
         // Import ACF fields
         $acf_fields = self::extract_acf_fields($row);
-        if (!empty($acf_fields) && RIA_DM_ACF_Handler::is_acf_active()) {
-            RIA_DM_ACF_Handler::import_fields($post_id, $acf_fields);
+        if (!empty($acf_fields) && QRY_ACF_Handler::is_acf_active()) {
+            QRY_ACF_Handler::import_fields($post_id, $acf_fields);
         }
         
         // Import custom meta
@@ -470,7 +470,7 @@ class RIA_DM_Importer {
      * @return array Import results
      */
     public static function batch_import($file_path, $args, $progress_callback = null) {
-        $csv_data = RIA_DM_CSV_Processor::read_csv($file_path);
+        $csv_data = QRY_CSV_Processor::read_csv($file_path);
         
         if (is_wp_error($csv_data)) {
             return $csv_data;

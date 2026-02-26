@@ -81,14 +81,14 @@ class RIA_DM_Exporter {
         $filename = self::generate_filename($args['post_type']);
         
         // Write CSV
-        $file_path = RIA_DM_CSV_Processor::write_csv($filename, $headers, $data);
+        $file_path = QRY_CSV_Processor::write_csv($filename, $headers, $data);
         
         if (is_wp_error($file_path)) {
             return $file_path;
         }
         
         // Clean old files
-        RIA_DM_CSV_Processor::clean_old_files(1);
+        QRY_CSV_Processor::clean_old_files(1);
         
         return $file_path;
     }
@@ -123,13 +123,13 @@ class RIA_DM_Exporter {
         
         // Taxonomies
         if ($args['include_taxonomies']) {
-            $taxonomy_headers = RIA_DM_Taxonomy_Handler::get_taxonomy_headers($args['post_type']);
+            $taxonomy_headers = QRY_Taxonomy_Handler::get_taxonomy_headers($args['post_type']);
             $headers = array_merge($headers, $taxonomy_headers);
         }
         
         // ACF fields
-        if ($args['include_acf'] && RIA_DM_ACF_Handler::is_acf_active()) {
-            $acf_headers = RIA_DM_ACF_Handler::get_field_headers($args['post_type']);
+        if ($args['include_acf'] && QRY_ACF_Handler::is_acf_active()) {
+            $acf_headers = QRY_ACF_Handler::get_field_headers($args['post_type']);
             $headers = array_merge($headers, $acf_headers);
         }
         
@@ -159,9 +159,9 @@ class RIA_DM_Exporter {
         
         // Standard WordPress fields
         $row['ID'] = $post->ID;
-        $row['post_title'] = RIA_DM_CSV_Processor::sanitize_csv_value($post->post_title);
-        $row['post_content'] = RIA_DM_CSV_Processor::sanitize_csv_value($post->post_content);
-        $row['post_excerpt'] = RIA_DM_CSV_Processor::sanitize_csv_value($post->post_excerpt);
+        $row['post_title'] = QRY_CSV_Processor::sanitize_csv_value($post->post_title);
+        $row['post_content'] = QRY_CSV_Processor::sanitize_csv_value($post->post_content);
+        $row['post_excerpt'] = QRY_CSV_Processor::sanitize_csv_value($post->post_excerpt);
         $row['post_status'] = $post->post_status;
         $row['post_type'] = $post->post_type;
         $row['post_date'] = $post->post_date;
@@ -181,20 +181,20 @@ class RIA_DM_Exporter {
         
         // Taxonomies
         if ($args['include_taxonomies']) {
-            $taxonomy_data = RIA_DM_Taxonomy_Handler::export_terms($post_id, $post->post_type);
+            $taxonomy_data = QRY_Taxonomy_Handler::export_terms($post_id, $post->post_type);
             foreach ($taxonomy_data as $key => $value) {
                 if (isset($row[$key])) {
-                    $row[$key] = RIA_DM_CSV_Processor::sanitize_csv_value($value);
+                    $row[$key] = QRY_CSV_Processor::sanitize_csv_value($value);
                 }
             }
         }
         
         // ACF fields
-        if ($args['include_acf'] && RIA_DM_ACF_Handler::is_acf_active()) {
-            $acf_data = RIA_DM_ACF_Handler::export_fields($post_id);
+        if ($args['include_acf'] && QRY_ACF_Handler::is_acf_active()) {
+            $acf_data = QRY_ACF_Handler::export_fields($post_id);
             foreach ($acf_data as $key => $value) {
                 if (isset($row[$key])) {
-                    $row[$key] = RIA_DM_CSV_Processor::sanitize_csv_value($value);
+                    $row[$key] = QRY_CSV_Processor::sanitize_csv_value($value);
                 }
             }
         }
@@ -205,7 +205,7 @@ class RIA_DM_Exporter {
                 $meta_value = get_post_meta($post_id, $meta_key, true);
                 $header_key = 'meta_' . $meta_key;
                 if (isset($row[$header_key])) {
-                    $row[$header_key] = RIA_DM_CSV_Processor::sanitize_csv_value($meta_value);
+                    $row[$header_key] = QRY_CSV_Processor::sanitize_csv_value($meta_value);
                 }
             }
         }

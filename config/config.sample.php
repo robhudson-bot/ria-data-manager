@@ -1,6 +1,6 @@
 <?php
 /**
- * Sample Configuration for RIA Data Manager
+ * Sample Configuration for Quarry
  * 
  * Copy this file to config.php and customize for your site.
  * config.php is ignored by Git, so each site can have unique settings.
@@ -8,7 +8,7 @@
  * All settings are optional - the plugin works without configuration
  * using smart detection of post types, ACF fields, and taxonomies.
  * 
- * @package RIA_Data_Manager
+ * @package Quarry
  * @since 1.0.0
  */
 
@@ -168,7 +168,7 @@ return array(
     'logging' => array(
         'enable_logging' => true,           // Enable error logging
         'log_level' => 'error',             // error, warning, info, debug
-        'log_file' => 'ria-dm-debug.log',   // Log file name
+        'log_file' => 'qry-debug.log',   // Log file name
         'log_imports' => true,              // Log all import operations
         'log_exports' => true,              // Log all export operations
     ),
