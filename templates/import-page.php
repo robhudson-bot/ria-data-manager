@@ -285,9 +285,11 @@ jQuery(document).ready(function($) {
                     var results = response.data.results;
                     var html = '<p><strong>' + quarry.strings.complete + '</strong></p>';
                     html += '<ul>';
-                    html += '<li><?php _e('Successfully imported:', 'quarry'); ?> ' + results.success + '</li>';
                     html += '<li><?php _e('Created new:', 'quarry'); ?> ' + results.created + '</li>';
-                    html += '<li><?php _e('Updated existing:', 'quarry'); ?> ' + results.updated + '</li>';
+                    html += '<li><?php _e('Updated:', 'quarry'); ?> ' + results.updated + '</li>';
+                    if (results.skipped > 0) {
+                        html += '<li><?php _e('Skipped (unchanged):', 'quarry'); ?> ' + results.skipped + '</li>';
+                    }
                     html += '<li><?php _e('Failed:', 'quarry'); ?> ' + results.failed + '</li>';
                     html += '</ul>';
                     

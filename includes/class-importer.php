@@ -96,6 +96,7 @@ class QRY_Importer {
             'success' => 0,
             'updated' => 0,
             'created' => 0,
+            'skipped' => 0,
             'failed' => 0,
             'errors' => array(),
             'log_file' => basename(self::get_log_file()),
@@ -132,6 +133,9 @@ class QRY_Importer {
                     if ($result['action'] === 'updated') {
                         $results['updated']++;
                         self::log("Row $row_num UPDATED post ID {$result['post_id']} \"$post_title\"");
+                    } elseif ($result['action'] === 'skipped') {
+                        $results['skipped']++;
+                        self::log("Row $row_num SKIPPED (unchanged) post ID {$result['post_id']} \"$post_title\"");
                     } else {
                         $results['created']++;
                         self::log("Row $row_num CREATED post ID {$result['post_id']} \"$post_title\"");
@@ -151,7 +155,7 @@ class QRY_Importer {
         }
 
         self::log('--- Import complete ---');
-        self::log("Results: {$results['success']} success ({$results['updated']} updated, {$results['created']} created), {$results['failed']} failed");
+        self::log("Results: {$results['success']} success ({$results['updated']} updated, {$results['created']} created, {$results['skipped']} unchanged), {$results['failed']} failed");
         self::log('=== IMPORT FINISHED ===');
 
         return $results;
@@ -184,11 +188,30 @@ class QRY_Importer {
         
         // Prepare post data
         $post_data = self::prepare_post_data($row, $args);
-        
+
         if (is_wp_error($post_data)) {
             return $post_data;
         }
-        
+
+        // Collect non-core field data before the comparison check
+        $taxonomy_fields = self::extract_taxonomy_fields($row);
+        $acf_fields = self::extract_acf_fields($row);
+        $meta_fields = self::extract_meta_fields($row);
+        $featured_image = !empty($row['featured_image']) ? $row['featured_image'] : '';
+
+        // For existing posts, check if anything actually changed before writing
+        if ($post_id) {
+            $existing_post = get_post($post_id);
+            $has_changes = self::has_post_changes($existing_post, $post_data, $taxonomy_fields, $acf_fields, $meta_fields, $featured_image);
+
+            if (!$has_changes) {
+                return array(
+                    'post_id' => $post_id,
+                    'action' => 'skipped',
+                );
+            }
+        }
+
         // Insert or update post
         if ($post_id) {
             $post_data['ID'] = $post_id;
@@ -196,20 +219,19 @@ class QRY_Importer {
         } else {
             $result = wp_insert_post($post_data, true);
         }
-        
+
         if (is_wp_error($result)) {
             return $result;
         }
-        
+
         $post_id = $result;
-        
+
         // Import featured image
-        if (!empty($row['featured_image'])) {
-            self::import_featured_image($post_id, $row['featured_image']);
+        if (!empty($featured_image)) {
+            self::import_featured_image($post_id, $featured_image);
         }
-        
+
         // Import taxonomies
-        $taxonomy_fields = self::extract_taxonomy_fields($row);
         if (!empty($taxonomy_fields)) {
             QRY_Taxonomy_Handler::import_terms(
                 $post_id,
@@ -217,25 +239,105 @@ class QRY_Importer {
                 $args['create_taxonomies']
             );
         }
-        
+
         // Import ACF fields
-        $acf_fields = self::extract_acf_fields($row);
         if (!empty($acf_fields) && QRY_ACF_Handler::is_acf_active()) {
             QRY_ACF_Handler::import_fields($post_id, $acf_fields);
         }
-        
+
         // Import custom meta
-        $meta_fields = self::extract_meta_fields($row);
         if (!empty($meta_fields)) {
             self::import_meta_fields($post_id, $meta_fields);
         }
-        
+
         return array(
             'post_id' => $post_id,
             'action' => $action,
         );
     }
     
+    /**
+     * Check if CSV row data differs from the existing post.
+     *
+     * Compares core fields, taxonomy terms, ACF fields, and meta fields.
+     * Returns true if any value has changed, false if everything matches.
+     *
+     * @param WP_Post $existing   Existing post object.
+     * @param array   $post_data  Prepared core post data from CSV.
+     * @param array   $tax_fields Taxonomy fields (tax_slug => "term1, term2").
+     * @param array   $acf_fields ACF fields (acf_name => value).
+     * @param array   $meta_fields Meta fields (meta_key => value).
+     * @param string  $featured_image Featured image URL or ID.
+     * @return bool True if changes detected.
+     */
+    private static function has_post_changes($existing, $post_data, $tax_fields, $acf_fields, $meta_fields, $featured_image) {
+        // Compare core post fields
+        $check_fields = array('post_title', 'post_content', 'post_excerpt', 'post_status', 'post_name', 'post_parent', 'menu_order');
+        foreach ($check_fields as $field) {
+            if (isset($post_data[$field])) {
+                $current = isset($existing->$field) ? (string) $existing->$field : '';
+                $incoming = (string) $post_data[$field];
+                if ($current !== $incoming) {
+                    return true;
+                }
+            }
+        }
+
+        // Compare taxonomy terms
+        foreach ($tax_fields as $key => $value) {
+            $taxonomy = substr($key, 4); // Remove 'tax_' prefix
+            if (!taxonomy_exists($taxonomy)) {
+                continue;
+            }
+            $current_terms = wp_get_post_terms($existing->ID, $taxonomy, array('fields' => 'names'));
+            $current_value = is_array($current_terms) ? implode(', ', $current_terms) : '';
+            $new_terms = array_map('trim', explode(',', $value));
+            $new_terms = array_filter($new_terms);
+            $new_value = implode(', ', $new_terms);
+            if ($current_value !== $new_value) {
+                return true;
+            }
+        }
+
+        // Compare ACF fields
+        if (!empty($acf_fields) && function_exists('get_field')) {
+            foreach ($acf_fields as $key => $value) {
+                $field_name = substr($key, 4); // Remove 'acf_' prefix
+                $current = get_field($field_name, $existing->ID);
+                $current_str = is_array($current) ? implode(', ', $current) : (string) ($current ?? '');
+                if ($current_str !== (string) $value) {
+                    return true;
+                }
+            }
+        }
+
+        // Compare custom meta fields
+        foreach ($meta_fields as $key => $value) {
+            $meta_key = substr($key, 5); // Remove 'meta_' prefix
+            $current = get_post_meta($existing->ID, $meta_key, true);
+            if ((string) $current !== (string) $value) {
+                return true;
+            }
+        }
+
+        // Compare featured image
+        if (!empty($featured_image)) {
+            $current_thumb = get_post_thumbnail_id($existing->ID);
+            if (is_numeric($featured_image)) {
+                if ((int) $current_thumb !== (int) $featured_image) {
+                    return true;
+                }
+            } else {
+                $current_url = $current_thumb ? wp_get_attachment_url($current_thumb) : '';
+                if ($current_url !== $featured_image) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     /**
      * Prepare WordPress post data from CSV row
      *
@@ -484,14 +586,15 @@ class QRY_Importer {
             'success' => 0,
             'updated' => 0,
             'created' => 0,
+            'skipped' => 0,
             'failed' => 0,
             'errors' => array(),
         );
-        
+
         foreach ($batches as $batch_index => $batch) {
             foreach ($batch as $row_index => $row) {
                 $result = self::import_row($row, $args);
-                
+
                 if (is_wp_error($result)) {
                     $results['failed']++;
                     $results['errors'][] = $result->get_error_message();
@@ -499,6 +602,8 @@ class QRY_Importer {
                     $results['success']++;
                     if ($result['action'] === 'updated') {
                         $results['updated']++;
+                    } elseif ($result['action'] === 'skipped') {
+                        $results['skipped']++;
                     } else {
                         $results['created']++;
                     }
