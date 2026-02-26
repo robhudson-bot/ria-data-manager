@@ -23,6 +23,13 @@ define('RIA_DM_VERSION', '1.2.0');
 define('RIA_DM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('RIA_DM_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('RIA_DM_PLUGIN_BASENAME', plugin_basename(__FILE__));
+define('RIA_DM_MIN_WP_VERSION', '5.8');
+
+// GitHub token for checking plugin updates.
+// Read-only fine-grained PAT scoped to robhudson-bot/ria-data-manager.
+if (!defined('RIA_DM_UPDATE_TOKEN')) {
+    define('RIA_DM_UPDATE_TOKEN', '');
+}
 
 // Load optional site-specific configuration
 $ria_dm_config_file = RIA_DM_PLUGIN_DIR . 'config/config.php';
@@ -80,6 +87,9 @@ class RIA_Data_Manager {
         // Admin interface
         require_once RIA_DM_PLUGIN_DIR . 'includes/class-admin.php';
 
+        // GitHub auto-updater
+        require_once RIA_DM_PLUGIN_DIR . 'includes/class-github-updater.php';
+
         // Diagnostic tools (can be accessed via URL parameter)
         if (is_admin() && isset($_GET['page']) && $_GET['page'] === 'ria-data-manager-diagnostic') {
             require_once RIA_DM_PLUGIN_DIR . 'includes/diagnostic-acf-taxonomies.php';
@@ -103,6 +113,10 @@ class RIA_Data_Manager {
         if (is_admin()) {
             RIA_DM_Admin::get_instance();
         }
+
+        // Initialize GitHub updater
+        $updater = new RIA_DM_GitHub_Updater();
+        $updater->init();
     }
     
     /**
