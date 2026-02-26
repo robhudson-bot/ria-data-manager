@@ -62,14 +62,17 @@ class QRY_Admin {
             <h2 class="nav-tab-wrapper">
                 <a href="?page=quarry&tab=dashboard"
                    class="nav-tab <?php echo $active_tab === 'dashboard' ? 'nav-tab-active' : ''; ?>">
+                    <?php echo qry_icon( 'layout-dashboard', 16 ); ?>
                     <?php _e('Dashboard', 'quarry'); ?>
                 </a>
                 <a href="?page=quarry&tab=export"
                    class="nav-tab <?php echo $active_tab === 'export' ? 'nav-tab-active' : ''; ?>">
+                    <?php echo qry_icon( 'download', 16 ); ?>
                     <?php _e('Export', 'quarry'); ?>
                 </a>
                 <a href="?page=quarry&tab=import"
                    class="nav-tab <?php echo $active_tab === 'import' ? 'nav-tab-active' : ''; ?>">
+                    <?php echo qry_icon( 'upload', 16 ); ?>
                     <?php _e('Import', 'quarry'); ?>
                 </a>
             </h2>

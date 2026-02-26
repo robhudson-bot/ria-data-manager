@@ -116,7 +116,7 @@ $post_types = get_post_types(array('public' => true), 'objects');
             
             <p class="submit">
                 <button type="submit" class="button button-primary button-large" id="qry-export-btn">
-                    <span class="dashicons dashicons-download"></span>
+                    <?php echo qry_icon( 'download', 16 ); ?>
                     <?php _e('Export to CSV', 'quarry'); ?>
                 </button>
             </p>
@@ -198,8 +198,9 @@ jQuery(document).ready(function($) {
                         .removeClass('notice-error')
                         .addClass('notice notice-success')
                         .html('<p><strong>' + quarry.strings.complete + '</strong></p>' +
-                              '<p><a href="' + response.data.download_url + '" class="button button-primary" download>' +
-                              '<span class="dashicons dashicons-download"></span> Download ' + response.data.filename + '</a></p>')
+                              '<p><a href="' + response.data.download_url + '" class="qry-download-link" download>' +
+                              '<svg class="qry-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg> ' +
+                              'Download ' + response.data.filename + '</a></p>')
                         .show();
                 } else {
                     $('#qry-export-result')

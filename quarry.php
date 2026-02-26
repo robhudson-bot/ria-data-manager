@@ -3,7 +3,7 @@
  * Plugin Name: Quarry
  * Plugin URI: https://github.com/robhudson-bot/quarry
  * Description: WordPress site scanner and data manager. Discover your site structure, export/import metadata with ACF fields, and collaborate via Google Sheets.
- * Version: 2.0.0
+ * Version: 2.1.0
  * Author: Rob Hudson
  * Author URI: https://robhudson.ca
  * License: GPL v2 or later
@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('QRY_VERSION', '2.0.0');
+define('QRY_VERSION', '2.1.0');
 define('QRY_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('QRY_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('QRY_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -77,6 +77,9 @@ class Quarry {
      * Load required files
      */
     private function load_dependencies() {
+        // Lucide icon helper
+        require_once QRY_PLUGIN_DIR . 'includes/icons.php';
+
         // Core utilities
         require_once QRY_PLUGIN_DIR . 'includes/class-csv-processor.php';
         require_once QRY_PLUGIN_DIR . 'includes/class-acf-handler.php';

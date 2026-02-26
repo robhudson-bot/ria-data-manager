@@ -24,6 +24,7 @@ $scanned_at = $scan['scanned_at'];
 	<!-- Header row -->
 	<div class="qry-dash-header">
 		<div class="qry-dash-meta">
+			<?php echo qry_icon( 'clock', 14 ); ?>
 			<?php
 			printf(
 				__( 'Last scan: %s', 'quarry' ),
@@ -31,8 +32,9 @@ $scanned_at = $scan['scanned_at'];
 			);
 			?>
 			<a href="<?php echo esc_url( wp_nonce_url( admin_url( 'tools.php?page=quarry&tab=dashboard&qry_rescan=1' ), 'qry_rescan' ) ); ?>"
-			   class="button button-small">
-				<?php _e( 'Rescan Site', 'quarry' ); ?>
+			   class="qry-btn qry-btn-outline qry-btn-sm">
+				<?php echo qry_icon( 'refresh-cw', 14 ); ?>
+				<?php _e( 'Rescan', 'quarry' ); ?>
 			</a>
 		</div>
 	</div>
@@ -44,20 +46,11 @@ $scanned_at = $scan['scanned_at'];
 			$total      = $type_stats ? $type_stats['total'] : 0;
 			$published  = $type_stats && isset( $type_stats['breakdown']['publish'] ) ? $type_stats['breakdown']['publish'] : 0;
 			$draft      = $type_stats && isset( $type_stats['breakdown']['draft'] ) ? $type_stats['breakdown']['draft'] : 0;
+			$icon_name  = qry_post_type_icon( $slug );
 			?>
 			<div class="qry-stat-card">
 				<div class="qry-stat-icon">
-					<?php if ( ! empty( $type['menu_icon'] ) && strpos( $type['menu_icon'], 'dashicons' ) === 0 ) : ?>
-						<span class="dashicons <?php echo esc_attr( $type['menu_icon'] ); ?>"></span>
-					<?php elseif ( $slug === 'page' ) : ?>
-						<span class="dashicons dashicons-admin-page"></span>
-					<?php elseif ( $slug === 'post' ) : ?>
-						<span class="dashicons dashicons-admin-post"></span>
-					<?php elseif ( $slug === 'attachment' ) : ?>
-						<span class="dashicons dashicons-admin-media"></span>
-					<?php else : ?>
-						<span class="dashicons dashicons-admin-generic"></span>
-					<?php endif; ?>
+					<?php echo qry_icon( $icon_name, 24 ); ?>
 				</div>
 				<div class="qry-stat-body">
 					<div class="qry-stat-num"><?php echo number_format_i18n( $total ); ?></div>
@@ -83,7 +76,7 @@ $scanned_at = $scan['scanned_at'];
 		<!-- Media library -->
 		<div class="qry-stat-card">
 			<div class="qry-stat-icon">
-				<span class="dashicons dashicons-admin-media"></span>
+				<?php echo qry_icon( 'image', 24 ); ?>
 			</div>
 			<div class="qry-stat-body">
 				<div class="qry-stat-num"><?php echo number_format_i18n( $stats['media_count'] ); ?></div>
@@ -98,7 +91,7 @@ $scanned_at = $scan['scanned_at'];
 		<!-- Taxonomies -->
 		<div class="qry-dash-col">
 			<div class="qry-card">
-				<h3><?php _e( 'Taxonomies', 'quarry' ); ?></h3>
+				<h3><?php echo qry_icon( 'tag', 18 ); ?> <?php _e( 'Taxonomies', 'quarry' ); ?></h3>
 				<?php if ( ! empty( $taxonomies ) ) : ?>
 					<table class="widefat striped">
 						<thead>
@@ -114,7 +107,13 @@ $scanned_at = $scan['scanned_at'];
 								?>
 								<tr>
 									<td><strong><?php echo esc_html( $tax['label'] ); ?></strong> <code><?php echo esc_html( $slug ); ?></code></td>
-									<td><?php echo $tax['hierarchical'] ? __( 'Hierarchical', 'quarry' ) : __( 'Flat', 'quarry' ); ?></td>
+									<td>
+										<?php if ( $tax['hierarchical'] ) : ?>
+											<span class="qry-badge"><?php _e( 'Hierarchical', 'quarry' ); ?></span>
+										<?php else : ?>
+											<span class="qry-badge"><?php _e( 'Flat', 'quarry' ); ?></span>
+										<?php endif; ?>
+									</td>
 									<td class="qry-num-col"><?php echo number_format_i18n( $term_count ); ?></td>
 								</tr>
 							<?php endforeach; ?>
@@ -129,7 +128,7 @@ $scanned_at = $scan['scanned_at'];
 		<!-- Detected Integrations -->
 		<div class="qry-dash-col">
 			<div class="qry-card">
-				<h3><?php _e( 'Detected Integrations', 'quarry' ); ?></h3>
+				<h3><?php echo qry_icon( 'plug', 18 ); ?> <?php _e( 'Detected Integrations', 'quarry' ); ?></h3>
 				<?php if ( ! empty( $plugins ) ) : ?>
 					<table class="widefat striped">
 						<thead>
@@ -143,7 +142,7 @@ $scanned_at = $scan['scanned_at'];
 							<?php foreach ( $plugins as $key => $plugin ) : ?>
 								<tr>
 									<td><strong><?php echo esc_html( $plugin['name'] ); ?></strong></td>
-									<td><?php echo esc_html( $plugin['version'] ); ?></td>
+									<td><code><?php echo esc_html( $plugin['version'] ); ?></code></td>
 									<td><span class="qry-badge qry-badge-active"><?php _e( 'Active', 'quarry' ); ?></span></td>
 								</tr>
 							<?php endforeach; ?>
@@ -158,8 +157,8 @@ $scanned_at = $scan['scanned_at'];
 			<?php if ( isset( $plugins['acf'] ) && function_exists( 'acf_get_field_groups' ) ) :
 				$all_groups = acf_get_field_groups();
 				?>
-				<div class="qry-card" style="margin-top: 20px;">
-					<h3><?php _e( 'ACF Field Groups', 'quarry' ); ?></h3>
+				<div class="qry-card">
+					<h3><?php echo qry_icon( 'layers', 18 ); ?> <?php _e( 'ACF Field Groups', 'quarry' ); ?></h3>
 					<?php if ( ! empty( $all_groups ) ) : ?>
 						<table class="widefat striped">
 							<thead>
@@ -181,7 +180,7 @@ $scanned_at = $scan['scanned_at'];
 											<?php if ( $group['active'] ) : ?>
 												<span class="qry-badge qry-badge-active"><?php _e( 'Active', 'quarry' ); ?></span>
 											<?php else : ?>
-												<span class="qry-badge"><?php _e( 'Inactive', 'quarry' ); ?></span>
+												<span class="qry-badge qry-badge-inactive"><?php _e( 'Inactive', 'quarry' ); ?></span>
 											<?php endif; ?>
 										</td>
 									</tr>

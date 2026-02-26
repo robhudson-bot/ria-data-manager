@@ -75,11 +75,11 @@ $post_types = get_post_types(array('public' => true), 'objects');
             
             <p class="submit">
                 <button type="button" class="button button-secondary" id="qry-preview-btn">
-                    <span class="dashicons dashicons-visibility"></span>
+                    <?php echo qry_icon( 'eye', 16 ); ?>
                     <?php _e('Preview Import', 'quarry'); ?>
                 </button>
                 <button type="submit" class="button button-primary button-large" id="qry-import-btn">
-                    <span class="dashicons dashicons-upload"></span>
+                    <?php echo qry_icon( 'upload', 16 ); ?>
                     <?php _e('Import CSV', 'quarry'); ?>
                 </button>
             </p>
@@ -237,7 +237,7 @@ jQuery(document).ready(function($) {
                 }
             },
             complete: function() {
-                $btn.prop('disabled', false).html('<span class="dashicons dashicons-visibility"></span> Preview Import');
+                $btn.prop('disabled', false).html('<svg class="qry-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg> Preview Import');
             }
         });
     });
