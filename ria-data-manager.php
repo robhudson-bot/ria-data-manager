@@ -3,7 +3,7 @@
  * Plugin Name: RIA Data Manager
  * Plugin URI: https://github.com/robhudson-bot/ria-data-manager
  * Description: Export and import WordPress metadata (posts, pages, custom post types) with ACF fields for collaborative editing in Google Sheets. Optimized for team workflows.
- * Version: 1.2.0
+ * Version: 1.2.1
  * Author: Rob Hudson
  * Author URI: https://the-ria.ca
  * License: GPL v2 or later
@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('RIA_DM_VERSION', '1.2.0');
+define('RIA_DM_VERSION', '1.2.1');
 define('RIA_DM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('RIA_DM_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('RIA_DM_PLUGIN_BASENAME', plugin_basename(__FILE__));
